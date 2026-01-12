@@ -834,7 +834,6 @@
   add-field
   fieldable-columns
   fields
-  find-visible-column-for-ref
   infer-has-field-values ; Single-use
   json-field? ; Single-use
   remove-field

@@ -139,14 +139,22 @@
   []
   (pos? *transaction-depth*))
 
-(defn- do-transaction [^java.sql.Connection connection f]
+(defn- do-transaction [^java.sql.Connection connection {:keys [rollback-only] :or {rollback-only false}} f]
   (letfn [(thunk []
             (let [savepoint (.setSavepoint connection)]
               (try
                 (let [result (f connection)]
-                  (when (= *transaction-depth* 1)
-                    ;; top-level transaction, commit
-                    (.commit connection))
+                  (cond
+                    ;; top-level transaction, commit or rollback if this is a rollback-only txn
+                    (and (= *transaction-depth* 1) rollback-only)
+                    (.rollback connection)
+
+                    (= *transaction-depth* 1)
+                    (.commit connection)
+
+                    ;; rollback the savepoint if we are nested
+                    rollback-only
+                    (.rollback connection savepoint))
                   result)
                 (catch Throwable txn-e
                   (try
@@ -203,7 +211,7 @@
 
     :else
     (binding [*transaction-depth* (inc *transaction-depth*)]
-      (do-transaction connection f))))
+      (do-transaction connection options f))))
 
 (methodical/defmethod t2.pipeline/transduce-query :before :default
   "Make sure application database calls are not done inside core.async dispatch pool threads. This is done relatively

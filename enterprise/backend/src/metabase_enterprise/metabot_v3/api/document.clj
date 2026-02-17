@@ -116,7 +116,7 @@
         parts (into [] (metabot-v3.agent/run-agent-loop
                         {:messages           [{:role :user
                                                :content instructions}]
-                         :profile-id         :document-generate-content
+                         :profile-id         :document
                          :state              {}
                          :context            context
                          :tracking-opts      {:source              "document_generate_content"

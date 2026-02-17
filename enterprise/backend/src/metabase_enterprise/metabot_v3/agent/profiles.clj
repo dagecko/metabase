@@ -127,17 +127,16 @@
                     #'agent-tools/edit-chart-tool]})
 
 (register-profile!
- {:name            :document-generate-content
-  :prompt-template "document-generate-content.selmer"
+ {:name :document
+  :prompt-template "document.selmer"
   :max-iterations  10
   :temperature     0.3
   :required-tool-call? true
-  :tools           [#'agent-tools/list-available-data-sources-tool
-                    #'agent-tools/list-available-fields-tool
-                    #'agent-tools/get-field-values-tool
-                    #'agent-tools/document-schema-collect-tool
-                    #'agent-tools/document-construct-model-chart-tool
-                    #'agent-tools/document-construct-sql-chart-tool]})
+  :tools           [#'agent-tools/search-tool
+                    #'agent-tools/read-resource-tool
+                    #'agent-tools/create-sql-query-tool
+                    #'agent-tools/construct-notebook-query-tool
+                    #'agent-tools/create-chart-tool]})
 
 (register-profile!
  {:name            :slackbot

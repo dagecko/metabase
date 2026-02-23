@@ -4,7 +4,6 @@
    [clojure.core.async :as a]
    [metabase-enterprise.api.routes.common :as ee.api.routes]
    [metabase-enterprise.metabot-v3.agent.core :as agent]
-   [metabase-enterprise.metabot-v3.api.document]
    [metabase-enterprise.metabot-v3.api.metabot]
    [metabase-enterprise.metabot-v3.client :as metabot-v3.client]
    [metabase-enterprise.metabot-v3.client.schema :as metabot-v3.client.schema]
@@ -279,9 +278,6 @@
     {"/metabot"  (ee.api.routes/+require-premium-feature
                   :metabot-v3 (deferred-tru "MetaBot")
                   metabase-enterprise.metabot-v3.api.metabot/routes)
-     "/document" (ee.api.routes/+require-premium-feature
-                  :metabot-v3 (deferred-tru "MetaBot")
-                  metabase-enterprise.metabot-v3.api.document/routes)
      ;; premium check happens in the route so we still ack events to prevent slack retrying
      "/slack"    metabase-enterprise.slackbot.api/routes})
    (ee.api.routes/+require-premium-feature

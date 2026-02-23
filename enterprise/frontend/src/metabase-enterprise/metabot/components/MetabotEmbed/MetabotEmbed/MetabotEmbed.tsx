@@ -357,7 +357,7 @@ export const MetabotComponent = memo(
       );
 
       editor.commands.insertContentAt(nodePosition, [
-        ...cards.map(({ cardId, description }) => {
+        ...cards.flatMap(({ cardId, description }) => {
           return [
             wrapCardEmbed({
               type: "cardEmbed",

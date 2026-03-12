@@ -7,6 +7,7 @@ export interface TicksDimensions {
   yTicksWidthLeft: number;
   yTicksWidthRight: number;
   xTicksHeight: number;
+  maxXTickWidth: number;
   firstXTickWidth: number;
   lastXTickWidth: number;
 }

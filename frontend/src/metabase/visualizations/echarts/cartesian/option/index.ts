@@ -174,7 +174,6 @@ export const getCartesianChartOption = (
     ...ensureRoomForLabels(
       buildAxes(
         chartModel,
-        chartWidth,
         chartMeasurements,
         settings,
         hasTimelineEvents,

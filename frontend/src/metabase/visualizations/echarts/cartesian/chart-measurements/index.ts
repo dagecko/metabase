@@ -412,6 +412,7 @@ const getTicksDimensions = (
     yTicksWidthLeft: 0,
     yTicksWidthRight: 0,
     xTicksHeight: 0,
+    maxXTickWidth: 0,
     firstXTickWidth: 0,
     lastXTickWidth: 0,
   };
@@ -479,6 +480,17 @@ const getTicksDimensions = (
       (isTimeSeries && hasTimelineEvents
         ? CHART_STYLE.timelineEvents.height
         : 0);
+
+    // adjust maxXTickWidth based on rotation
+    // note getAutoAxisEnabledSetting and getXAxxisTicksHeight require the unadjusted maxXTickWidth
+    if (axisEnabledSetting === "rotate-90") {
+      ticksDimensions.maxXTickWidth =
+        renderingContext.theme.cartesian.label.fontSize;
+    } else if (axisEnabledSetting === "rotate-45") {
+      ticksDimensions.maxXTickWidth = maxXTickWidth / Math.SQRT2;
+    } else {
+      ticksDimensions.maxXTickWidth = maxXTickWidth;
+    }
   }
 
   return { ticksDimensions, axisEnabledSetting };

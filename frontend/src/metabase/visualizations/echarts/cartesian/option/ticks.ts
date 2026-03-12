@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 
 import type { ContinuousDomain } from "metabase/visualizations/shared/types/scale";
 
+import type { ChartMeasurements } from "../chart-measurements/types";
 import type {
   TimeSeriesAxisFormatter,
   TimeSeriesXAxisModel,
@@ -27,7 +28,7 @@ const getPadding = (intervalsCount: number) => {
 
 export const getTicksOptions = (
   xAxisModel: TimeSeriesXAxisModel,
-  chartWidth: number,
+  chartMeasurements: ChartMeasurements,
 ) => {
   const { range, toEChartsAxisValue, interval, intervalsCount } = xAxisModel;
 
@@ -56,8 +57,7 @@ export const getTicksOptions = (
   const computedInterval = computeTimeseriesTicksInterval(
     xDomain,
     interval,
-    chartWidth,
-    xAxisModel.formatter,
+    chartMeasurements,
   );
   const largestInterval = getLargestInterval([computedInterval, interval]);
 

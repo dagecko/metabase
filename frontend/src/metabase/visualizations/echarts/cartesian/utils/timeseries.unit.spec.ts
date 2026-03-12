@@ -7,6 +7,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 import { getVisualizationTransformed } from "metabase/visualizations";
+import type { ChartMeasurements } from "metabase/visualizations/echarts/cartesian/chart-measurements/types";
 import type {
   CartesianChartDateTimeAbsoluteUnit,
   TimeSeriesInterval,
@@ -29,6 +30,27 @@ import {
   createMockColumn,
   createMockSingleSeries,
 } from "metabase-types/api/mocks";
+
+function createMockChartMeasurements(
+  boundaryWidth: number,
+  maxXTickWidth: number,
+): ChartMeasurements {
+  return {
+    boundaryWidth,
+    ticksDimensions: {
+      maxXTickWidth,
+      yTicksWidthLeft: 0,
+      yTicksWidthRight: 0,
+      xTicksHeight: 0,
+      firstXTickWidth: 0,
+      lastXTickWidth: 0,
+    },
+    padding: { top: 0, bottom: 0, left: 0, right: 0 },
+    bounds: { top: 0, bottom: 0, left: 0, right: 0 },
+    outerHeight: 0,
+    axisEnabledSetting: true,
+  };
+}
 
 registerVisualizations();
 
@@ -134,13 +156,11 @@ describe("visualization.lib.timeseries", () => {
   });
 
   describe("computeTimeseriesTicksInterval", () => {
-    // computeTimeseriesTicksInterval just uses tickFormat to measure the character length of the current formatting style
-    const fakeTickFormat = (_value: unknown) => "2020-01-01";
     type TickInput = {
       xDomain: ContinuousDomain;
       xInterval: TimeSeriesInterval;
-      chartWidth: number;
-      tickFormat: (value: RowValue) => string;
+      boundaryWidth: number;
+      maxXTickWidth: number;
     };
     type TickExpected = {
       expectedUnit: CartesianChartDateTimeAbsoluteUnit;
@@ -155,12 +175,12 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          chartWidth: 1920,
-          tickFormat: fakeTickFormat,
+          boundaryWidth: 1920,
+          maxXTickWidth: 55,
         },
         { expectedUnit: "month", expectedCount: 1 },
       ],
-      // it should be bump to quarters on a narrower chart
+      // it should be bumped to quarters on a narrower chart
       [
         {
           xDomain: [
@@ -168,8 +188,8 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          chartWidth: 700,
-          tickFormat: fakeTickFormat,
+          boundaryWidth: 700,
+          maxXTickWidth: 55,
         },
         { expectedUnit: "quarter", expectedCount: 1 },
       ],
@@ -181,8 +201,8 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          chartWidth: 300,
-          tickFormat: fakeTickFormat,
+          boundaryWidth: 300,
+          maxXTickWidth: 55,
         },
         { expectedUnit: "year", expectedCount: 1 },
       ],
@@ -192,12 +212,12 @@ describe("visualization.lib.timeseries", () => {
       //   {
       //     xDomain: [new Date("2020-01-01"), new Date("2021-01-01")],
       //     xInterval: { interval: "month", count: 3 },
-      //     chartWidth: 1920,
-      //     tickFormat: fakeTickFormat,
+      //     boundaryWidth: 1920,
+      //     maxXTickWidth: 55,
       //   },
       //   { expectedUnit: "month", expectedCount: 3 },
       // ],
-      // Long date formats should update the interval to have fewer ticks
+      // wide tick labels should update the interval to have fewer ticks
       [
         {
           xDomain: [
@@ -205,10 +225,8 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          chartWidth: 1920,
-          tickFormat: () =>
-            // thankfully no date format is actually this long
-            "The eighth day of July in the year of our Lord two thousand and nineteen",
+          boundaryWidth: 1920,
+          maxXTickWidth: 418,
         },
         { expectedUnit: "year", expectedCount: 1 },
       ],
@@ -216,15 +234,14 @@ describe("visualization.lib.timeseries", () => {
 
     TEST_CASES.forEach(
       ([
-        { xDomain, xInterval, chartWidth, tickFormat },
+        { xDomain, xInterval, boundaryWidth, maxXTickWidth },
         { expectedUnit, expectedCount },
       ]) => {
         it(`should return ${expectedCount} ${expectedUnit}`, () => {
           const { unit, count } = computeTimeseriesTicksInterval(
             xDomain,
             xInterval,
-            chartWidth,
-            tickFormat,
+            createMockChartMeasurements(boundaryWidth, maxXTickWidth),
           );
           expect(unit).toBe(expectedUnit);
           expect(count).toBe(expectedCount);

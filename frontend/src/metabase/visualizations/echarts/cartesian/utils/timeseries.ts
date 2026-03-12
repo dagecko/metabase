@@ -17,6 +17,7 @@ import type {
 } from "metabase-types/api";
 
 import type { ShowWarning } from "../../types";
+import type { ChartMeasurements } from "../chart-measurements/types";
 
 export const tryGetDate = (rowValue: RowValue): Dayjs | null => {
   if (typeof rowValue === "boolean") {
@@ -199,21 +200,12 @@ function timeseriesTicksInterval(
   return TIMESERIES_INTERVALS[intervalIndex];
 }
 
-/// return the maximum number of ticks to show for a timeseries chart of a given width
-function maxTicksForChartWidth(
-  chartWidth: number,
-  tickFormat: (value: RowValue) => string,
-) {
-  const PIXELS_PER_CHARACTER = 5.5;
-  // if there isn't enough buffer, the labels are hidden by ECharts
+function maxTicksForChartWidth(chartMeasurements: ChartMeasurements) {
   const TICK_BUFFER_PIXELS = 10;
-
-  // day of week and month names vary in length, but it's slow to check all of them
-  // as an approximation we just use a specific date which was long in my locale
-  const formattedValue = tickFormat(new Date(2019, 8, 4).toISOString());
-  const pixelsPerTick =
-    formattedValue.length * PIXELS_PER_CHARACTER + TICK_BUFFER_PIXELS;
-  return Math.floor(chartWidth / pixelsPerTick); // round down so we don't end up with too many ticks
+  return Math.floor(
+    chartMeasurements.boundaryWidth /
+      (chartMeasurements.ticksDimensions.maxXTickWidth + TICK_BUFFER_PIXELS),
+  );
 }
 
 /// return the range, in milliseconds, of the xDomain. ("Range" in this sense refers to the total "width"" of the
@@ -229,13 +221,12 @@ function timeRangeMilliseconds(xDomain: ContinuousDomain) {
 export function computeTimeseriesTicksInterval(
   xDomain: ContinuousDomain,
   xInterval: TimeSeriesInterval,
-  chartWidth: number,
-  tickFormat: (value: RowValue) => string,
+  chartMeasurements: ChartMeasurements,
 ) {
   return timeseriesTicksInterval(
     xInterval,
     timeRangeMilliseconds(xDomain),
-    maxTicksForChartWidth(chartWidth, tickFormat),
+    maxTicksForChartWidth(chartMeasurements),
   );
 }
 

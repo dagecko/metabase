@@ -192,7 +192,6 @@ const getCommonDimensionAxisOptions = (
 
 export const buildDimensionAxis = (
   chartModel: BaseCartesianChartModel,
-  width: number,
   settings: ComputedVisualizationSettings,
   chartMeasurements: ChartMeasurements,
   hasTimelineEvents: boolean,
@@ -212,7 +211,6 @@ export const buildDimensionAxis = (
   if (isTimeSeriesAxis(xAxisModel)) {
     return buildTimeSeriesDimensionAxis(
       xAxisModel,
-      width,
       hasTimelineEvents,
       settings,
       chartMeasurements,
@@ -281,14 +279,13 @@ export const buildNumericDimensionAxis = (
 
 export const buildTimeSeriesDimensionAxis = (
   xAxisModel: TimeSeriesXAxisModel,
-  width: number,
   hasTimelineEvents: boolean,
   settings: ComputedVisualizationSettings,
   chartMeasurements: ChartMeasurements,
   renderingContext: RenderingContext,
 ): XAXisOption => {
   const { formatter, maxInterval, minInterval, canRender, xDomainPadded } =
-    getTicksOptions(xAxisModel, width);
+    getTicksOptions(xAxisModel, chartMeasurements);
 
   return {
     ...getCommonDimensionAxisOptions(
@@ -470,7 +467,6 @@ const buildMetricsAxes = (
 
 export const buildAxes = (
   chartModel: BaseCartesianChartModel,
-  width: number,
   chartMeasurements: ChartMeasurements,
   settings: ComputedVisualizationSettings,
   hasTimelineEvents: boolean,
@@ -479,7 +475,6 @@ export const buildAxes = (
   return {
     xAxis: buildDimensionAxis(
       chartModel,
-      width,
       settings,
       chartMeasurements,
       hasTimelineEvents,

@@ -106,7 +106,6 @@ export function getScatterPlotOption(
     series: seriesOption,
     ...buildAxes(
       chartModel,
-      chartWidth,
       chartMeasurements,
       settings,
       hasTimelineEvents,

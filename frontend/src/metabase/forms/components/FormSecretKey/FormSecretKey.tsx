@@ -10,8 +10,10 @@ import { UtilApi } from "metabase/services";
 import type { PasswordInputProps } from "metabase/ui";
 import { Button, Flex, PasswordInput } from "metabase/ui";
 
-export interface FormSecretKeyProps
-  extends Omit<PasswordInputProps, "value" | "error"> {
+export interface FormSecretKeyProps extends Omit<
+  PasswordInputProps,
+  "value" | "error"
+> {
   name: string;
   nullable?: boolean;
   confirmation: {

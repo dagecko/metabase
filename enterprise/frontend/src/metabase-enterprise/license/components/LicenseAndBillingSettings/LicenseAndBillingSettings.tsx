@@ -43,6 +43,7 @@ const getDescription = ({
   if (!tokenStatus || !tokenStatus.valid) {
     return (
       <>
+        {/* prettier-ignore */}
         {jt`Your license isn’t valid anymore. If you have a new license, please
         enter it below, otherwise please contact ${
           (

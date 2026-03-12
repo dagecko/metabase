@@ -21,8 +21,9 @@ function urlTransform(url: string): string {
   return defaultUrlTransform(url);
 }
 
-export interface MarkdownProps
-  extends ComponentPropsWithRef<typeof ReactMarkdown> {
+export interface MarkdownProps extends ComponentPropsWithRef<
+  typeof ReactMarkdown
+> {
   className?: string;
   dark?: boolean;
   disallowHeading?: boolean;

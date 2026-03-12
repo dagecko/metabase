@@ -24,6 +24,7 @@ export const MigrationError = ({ migration }: MigrationErrorProps) => {
         <Box>
           <Text fw="bold">{t`Migration to Metabase Cloud failed`}</Text>
           <Text mt="1rem">
+            {/* prettier-ignore */}
             {c("{0} is an email address")
               .jt`Please try again later, and reach out to us at ${
               (

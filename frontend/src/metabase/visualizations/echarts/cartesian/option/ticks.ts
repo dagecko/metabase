@@ -10,6 +10,7 @@ import type {
 } from "../model/types";
 import {
   computeTimeseriesTicksInterval,
+  getFormatter,
   getLargestInterval,
   getTimeSeriesIntervalDuration,
 } from "../utils/timeseries";
@@ -58,16 +59,11 @@ export const getTicksOptions = (
     xDomain,
     interval,
     chartMeasurements,
+    formatter,
   );
   const largestInterval = getLargestInterval([computedInterval, interval]);
 
-  // If the data interval is week but due to available space and the range of the chart
-  // we decide to show monthly, yearly or even larger ticks, we should format ticks values as months.
-  if (interval.unit === "week" && largestInterval.unit !== "week") {
-    formatter = (value) => {
-      return xAxisModel.formatter(value, "month");
-    };
-  }
+  formatter = getFormatter(formatter, interval.unit, largestInterval.unit);
 
   const isWithinRange = (date: Dayjs) => {
     return date.isAfter(paddedMin) && date.isBefore(paddedMax);

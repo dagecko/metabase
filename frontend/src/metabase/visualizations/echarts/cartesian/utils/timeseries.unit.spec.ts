@@ -33,12 +33,12 @@ import {
 
 function createMockChartMeasurements(
   boundaryWidth: number,
-  maxXTickWidth: number,
+  xTickWidth: number,
 ): ChartMeasurements {
   return {
     boundaryWidth,
     ticksDimensions: {
-      maxXTickWidth,
+      getXTickWidth: () => xTickWidth,
       yTicksWidthLeft: 0,
       yTicksWidthRight: 0,
       xTicksHeight: 0,
@@ -156,11 +156,13 @@ describe("visualization.lib.timeseries", () => {
   });
 
   describe("computeTimeseriesTicksInterval", () => {
+    const mockFormatter = (value: RowValue) => String(value);
+
     type TickInput = {
       xDomain: ContinuousDomain;
       xInterval: TimeSeriesInterval;
       boundaryWidth: number;
-      maxXTickWidth: number;
+      xTickWidth: number;
     };
     type TickExpected = {
       expectedUnit: CartesianChartDateTimeAbsoluteUnit;
@@ -176,7 +178,7 @@ describe("visualization.lib.timeseries", () => {
           ],
           xInterval: { unit: "month", count: 1 },
           boundaryWidth: 1920,
-          maxXTickWidth: 55,
+          xTickWidth: 55,
         },
         { expectedUnit: "month", expectedCount: 1 },
       ],
@@ -189,7 +191,7 @@ describe("visualization.lib.timeseries", () => {
           ],
           xInterval: { unit: "month", count: 1 },
           boundaryWidth: 700,
-          maxXTickWidth: 55,
+          xTickWidth: 55,
         },
         { expectedUnit: "quarter", expectedCount: 1 },
       ],
@@ -202,7 +204,7 @@ describe("visualization.lib.timeseries", () => {
           ],
           xInterval: { unit: "month", count: 1 },
           boundaryWidth: 300,
-          maxXTickWidth: 55,
+          xTickWidth: 55,
         },
         { expectedUnit: "year", expectedCount: 1 },
       ],
@@ -213,7 +215,7 @@ describe("visualization.lib.timeseries", () => {
       //     xDomain: [new Date("2020-01-01"), new Date("2021-01-01")],
       //     xInterval: { interval: "month", count: 3 },
       //     boundaryWidth: 1920,
-      //     maxXTickWidth: 55,
+      //     xTickWidth: 55,
       //   },
       //   { expectedUnit: "month", expectedCount: 3 },
       // ],
@@ -226,7 +228,7 @@ describe("visualization.lib.timeseries", () => {
           ],
           xInterval: { unit: "month", count: 1 },
           boundaryWidth: 1920,
-          maxXTickWidth: 418,
+          xTickWidth: 418,
         },
         { expectedUnit: "year", expectedCount: 1 },
       ],
@@ -234,14 +236,15 @@ describe("visualization.lib.timeseries", () => {
 
     TEST_CASES.forEach(
       ([
-        { xDomain, xInterval, boundaryWidth, maxXTickWidth },
+        { xDomain, xInterval, boundaryWidth, xTickWidth },
         { expectedUnit, expectedCount },
       ]) => {
         it(`should return ${expectedCount} ${expectedUnit}`, () => {
           const { unit, count } = computeTimeseriesTicksInterval(
             xDomain,
             xInterval,
-            createMockChartMeasurements(boundaryWidth, maxXTickWidth),
+            createMockChartMeasurements(boundaryWidth, xTickWidth),
+            mockFormatter,
           );
           expect(unit).toBe(expectedUnit);
           expect(count).toBe(expectedCount);

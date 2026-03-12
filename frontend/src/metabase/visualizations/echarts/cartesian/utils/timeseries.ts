@@ -4,7 +4,11 @@ import _ from "underscore";
 
 import { parseTimestamp } from "metabase/lib/time-dayjs";
 import { isNotNull } from "metabase/lib/types";
-import type { TimeSeriesInterval } from "metabase/visualizations/echarts/cartesian/model/types";
+import type {
+  CartesianChartDateTimeAbsoluteUnit,
+  TimeSeriesAxisFormatter,
+  TimeSeriesInterval,
+} from "metabase/visualizations/echarts/cartesian/model/types";
 import {
   multipleTimezoneWarning,
   unexpectedTimezoneWarning,
@@ -156,12 +160,14 @@ function expectedTickCount(
 
 /// Get the appropriate tick interval option from the TIMESERIES_INTERVALS above based on the xAxis bucketing
 /// and the max number of ticks we want to show (itself calculated from chart width).
-function timeseriesTicksInterval(
+export function computeTimeseriesTicksInterval(
+  xDomain: ContinuousDomain,
   xInterval: TimeSeriesInterval,
-  timeRangeMilliseconds: number,
-  maxTickCount: number,
-  minTickCount: number = 2,
+  chartMeasurements: ChartMeasurements,
+  formatter: TimeSeriesAxisFormatter,
 ) {
+  const timeRangeMilliseconds = getTimeRangeMilliseconds(xDomain);
+  const minTickCount = 2;
   // first we want to find out where in TIMESERIES_INTERVALS we should start looking for a good match. Find the
   // interval with a matching interval and count (e.g. `hour` and `1`) and we'll start there.
   let initialIndex = _.findIndex(TIMESERIES_INTERVALS, ({ unit, count }) => {
@@ -178,8 +184,14 @@ function timeseriesTicksInterval(
   // Looking for the first interval which produces less ticks than the maxTicksCount.
   // However, if it produces less than minTickCount ticks we prefer taking a smaller previous interval.
   for (let i = initialIndex; i < TIMESERIES_INTERVALS.length; i++) {
+    const interval = TIMESERIES_INTERVALS[i];
+    const maxTickCount = maxTicksForChartWidth(
+      chartMeasurements,
+      interval.unit,
+      getFormatter(formatter, xInterval.unit, interval.unit),
+    );
     const intervalTicksCount = expectedTickCount(
-      TIMESERIES_INTERVALS[i],
+      interval,
       timeRangeMilliseconds,
     );
 
@@ -200,34 +212,94 @@ function timeseriesTicksInterval(
   return TIMESERIES_INTERVALS[intervalIndex];
 }
 
-function maxTicksForChartWidth(chartMeasurements: ChartMeasurements) {
+export function getFormatter(
+  formatter: TimeSeriesAxisFormatter,
+  dataUnit: CartesianChartDateTimeAbsoluteUnit,
+  chartUnit: CartesianChartDateTimeAbsoluteUnit,
+) {
+  // If the data interval is week but due to available space and the range of the chart
+  // we decide to show monthly, yearly or even larger ticks, we should format ticks values as months.
+  if (dataUnit === "week" && chartUnit !== "week") {
+    return (value: RowValue) => formatter(value, "month");
+  }
+  return formatter;
+}
+
+function maxTicksForChartWidth(
+  chartMeasurements: ChartMeasurements,
+  unit: CartesianChartDateTimeAbsoluteUnit,
+  formatter: TimeSeriesAxisFormatter,
+) {
   const TICK_BUFFER_PIXELS = 10;
-  return Math.floor(
-    chartMeasurements.boundaryWidth /
-      (chartMeasurements.ticksDimensions.maxXTickWidth + TICK_BUFFER_PIXELS),
+  const representativeDates = getRepresentativeDates(unit).map((date) =>
+    formatter(date),
   );
+  const longestDate = representativeDates.reduce((longest, date) => {
+    return date.length > longest.length ? date : longest;
+  });
+  const longestDateWidth =
+    chartMeasurements.ticksDimensions.getXTickWidth(longestDate);
+  return Math.floor(
+    chartMeasurements.boundaryWidth / (longestDateWidth + TICK_BUFFER_PIXELS),
+  );
+}
+
+/**
+ * Given a unit, returns an array of "representative" dates.
+ * "representative" means that the date with the longest string representation for the unit is contained in the array.
+ */
+function getRepresentativeDates(unit: CartesianChartDateTimeAbsoluteUnit) {
+  // the length of month names varies by locale
+  let months: number[];
+  if (unit === "year") {
+    months = [0];
+  } else if (unit === "quarter") {
+    months = [0, 3, 6, 9];
+  } else {
+    months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  }
+
+  let days: number[];
+  if (
+    unit === "year" ||
+    unit === "quarter" ||
+    unit === "month" ||
+    unit === "week"
+  ) {
+    days = [10]; // use a 2 digit day because it's longer
+  } else {
+    days = [10, 11, 12, 13, 14, 15, 16]; // test each possible weekday name
+  }
+
+  let hours: number[];
+  if (
+    unit === "year" ||
+    unit === "quarter" ||
+    unit === "month" ||
+    unit === "week" ||
+    unit === "day"
+  ) {
+    hours = [10]; // use a 2 digit hour because it's longer
+  } else {
+    hours = [10, 20]; // AM/PM length can vary by locale
+  }
+  const out: string[] = [];
+  for (const month of months) {
+    for (const day of days) {
+      for (const hour of hours) {
+        out.push(new Date(2026, month, day, hour).toISOString());
+      }
+    }
+  }
+  return out;
 }
 
 /// return the range, in milliseconds, of the xDomain. ("Range" in this sense refers to the total "width"" of the
 /// chart in milliseconds.)
-function timeRangeMilliseconds(xDomain: ContinuousDomain) {
+function getTimeRangeMilliseconds(xDomain: ContinuousDomain) {
   const startTime = xDomain[0]; // these are UNIX timestamps in milliseconds
   const endTime = xDomain[1];
   return endTime - startTime;
-}
-
-/// return the appropriate entry in TIMESERIES_INTERVALS for a given chart with domain, interval, and width.
-/// The entry is used to calculate how often a tick should be displayed for this chart (e.g. one tick every 5 minutes)
-export function computeTimeseriesTicksInterval(
-  xDomain: ContinuousDomain,
-  xInterval: TimeSeriesInterval,
-  chartMeasurements: ChartMeasurements,
-) {
-  return timeseriesTicksInterval(
-    xInterval,
-    timeRangeMilliseconds(xDomain),
-    maxTicksForChartWidth(chartMeasurements),
-  );
 }
 
 export function getLargestInterval(intervals: TimeSeriesInterval[]) {

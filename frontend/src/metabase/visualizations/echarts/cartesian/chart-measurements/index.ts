@@ -412,9 +412,9 @@ const getTicksDimensions = (
     yTicksWidthLeft: 0,
     yTicksWidthRight: 0,
     xTicksHeight: 0,
-    maxXTickWidth: 0,
     firstXTickWidth: 0,
     lastXTickWidth: 0,
+    getXTickWidth: () => 0,
   };
 
   if (leftAxisModel) {
@@ -481,16 +481,20 @@ const getTicksDimensions = (
         ? CHART_STYLE.timelineEvents.height
         : 0);
 
-    // adjust maxXTickWidth based on rotation
-    // note getAutoAxisEnabledSetting and getXAxxisTicksHeight require the unadjusted maxXTickWidth
-    if (axisEnabledSetting === "rotate-90") {
-      ticksDimensions.maxXTickWidth =
-        renderingContext.theme.cartesian.label.fontSize;
-    } else if (axisEnabledSetting === "rotate-45") {
-      ticksDimensions.maxXTickWidth = maxXTickWidth / Math.SQRT2;
-    } else {
-      ticksDimensions.maxXTickWidth = maxXTickWidth;
-    }
+    ticksDimensions.getXTickWidth = (text: string) => {
+      if (axisEnabledSetting === "rotate-90") {
+        return renderingContext.theme.cartesian.label.fontSize;
+      }
+      const width = renderingContext.measureText(text, {
+        ...CHART_STYLE.axisTicks,
+        size: renderingContext.theme.cartesian.label.fontSize,
+        family: renderingContext.fontFamily,
+      });
+      if (axisEnabledSetting === "rotate-45") {
+        return width / Math.SQRT2;
+      }
+      return width;
+    };
   }
 
   return { ticksDimensions, axisEnabledSetting };

@@ -91,7 +91,10 @@ export const getTicksOptions = (
   // (like February with 28 days) are shorter than others (31 days).
   // Instead, we force ECharts to generate daily ticks and filter to month starts.
   if (largestInterval.unit === "month") {
-    canRender = (date: Dayjs) => isWithinRange(date) && date.date() === 1;
+    canRender = (date: Dayjs) =>
+      isWithinRange(date) &&
+      date.date() === 1 &&
+      date.month() % largestInterval.count === 0;
     maxInterval = getTimeSeriesIntervalDuration({
       count: 1,
       unit: "day",
@@ -105,7 +108,9 @@ export const getTicksOptions = (
   if (!isSingleItem && largestInterval.unit === "quarter") {
     const effectiveTicksUnit = "month";
     canRender = (date: Dayjs) =>
-      isWithinRange(date) && date.startOf("quarter").isSame(date, "month");
+      isWithinRange(date) &&
+      date.startOf("quarter").isSame(date, "month") &&
+      (date.quarter() - 1) % largestInterval.count === 0;
     maxInterval = getTimeSeriesIntervalDuration({
       count: 1,
       unit: effectiveTicksUnit,

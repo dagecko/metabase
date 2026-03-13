@@ -183,7 +183,7 @@ describe("visualization.lib.timeseries", () => {
         },
         { expectedUnit: "month", expectedCount: 1 },
       ],
-      // it should be bumped to quarters on a narrower chart
+      // 2 month unit should work
       [
         {
           xDomain: [
@@ -192,6 +192,19 @@ describe("visualization.lib.timeseries", () => {
           ],
           xInterval: { unit: "month", count: 1 },
           outerWidth: 700,
+          xTickWidth: 55,
+        },
+        { expectedUnit: "month", expectedCount: 2 },
+      ],
+      // it should be bumped to quarters on a narrower chart
+      [
+        {
+          xDomain: [
+            new Date("2020-01-01").getTime(),
+            new Date("2021-01-01").getTime(),
+          ],
+          xInterval: { unit: "month", count: 1 },
+          outerWidth: 400,
           xTickWidth: 55,
         },
         { expectedUnit: "quarter", expectedCount: 1 },

@@ -42,8 +42,8 @@ export const msToDays = (ms: number) => ms / (24 * 60 * 60 * 1000);
 //
 // Count and time interval for axis.ticks()
 //
-export const TIMESERIES_INTERVALS: (TimeSeriesInterval & {
-  testFn: (date: Dayjs) => number;
+export const TICKS_TIMESERIES_INTERVALS: (TimeSeriesInterval & {
+  testFn?: (date: Dayjs) => number;
 })[] = [
   { unit: "ms", count: 1, testFn: (_d: Dayjs) => 0 }, //  (0) millisecond
   { unit: "second", count: 1, testFn: (d: Dayjs) => d.millisecond() }, //  (1) 1 second
@@ -61,13 +61,27 @@ export const TIMESERIES_INTERVALS: (TimeSeriesInterval & {
   { unit: "day", count: 1, testFn: (d: Dayjs) => d.hour() }, // (13) 1 day
   { unit: "week", count: 1, testFn: (d: Dayjs) => d.day() }, // (14) 1 week
   { unit: "month", count: 1, testFn: (d: Dayjs) => d.date() }, // (15) 1 month
+  { unit: "month", count: 2 },
   { unit: "quarter", count: 1, testFn: (d: Dayjs) => d.month() % 3 }, // (16) 3 months / 1 quarter
+  { unit: "quarter", count: 2 },
   { unit: "year", count: 1, testFn: (d: Dayjs) => d.month() }, // (17) 1 year
   { unit: "year", count: 2, testFn: (d: Dayjs) => d.year() % 2 }, // (18) 2 year
+  { unit: "year", count: 5 },
   { unit: "year", count: 10, testFn: (d: Dayjs) => d.year() % 10 }, // (19) 10 year
   { unit: "year", count: 50, testFn: (d: Dayjs) => d.year() % 50 }, // (20) 50 year
   { unit: "year", count: 100, testFn: (d: Dayjs) => d.year() % 100 }, // (21) 100 year
 ];
+
+// we use some extra intervals in computeTimeseriesTicksInterval - the ones without testFn
+// however, computeTimeseriesDataInterval requires that intervals be multiples of each other
+// so we filter out those extra ones here
+// see #43421
+const DATA_TIMESERIES_INTERVALS: (TimeSeriesInterval & {
+  testFn: (date: Dayjs) => number;
+})[] = TICKS_TIMESERIES_INTERVALS.filter(
+  (i): i is TimeSeriesInterval & { testFn: (date: Dayjs) => number } =>
+    i.testFn != null,
+);
 
 // mapping from Metabase "unit" to d3 intervals above
 const INTERVAL_INDEX_BY_UNIT: Record<DateTimeAbsoluteUnit, number> = {
@@ -101,18 +115,18 @@ export function computeTimeseriesDataInterval(
   xValues = xValues.filter(isNotNull);
 
   if (unit && INTERVAL_INDEX_BY_UNIT[unit] != null) {
-    return TIMESERIES_INTERVALS[INTERVAL_INDEX_BY_UNIT[unit]];
+    return DATA_TIMESERIES_INTERVALS[INTERVAL_INDEX_BY_UNIT[unit]];
   }
 
   // Always use 'day' when there's just one value.
   if (xValues.length === 1) {
-    return TIMESERIES_INTERVALS.find((i) => i.unit === "day");
+    return DATA_TIMESERIES_INTERVALS.find((i) => i.unit === "day");
   }
 
   // run each interval's test function on each value
   const valueLists = xValues.map((xValue) => {
     const parsed = parseTimestamp(xValue);
-    return TIMESERIES_INTERVALS.map((interval) => interval.testFn(parsed));
+    return DATA_TIMESERIES_INTERVALS.map((interval) => interval.testFn(parsed));
   });
 
   // count the number of different values for each interval
@@ -122,7 +136,9 @@ export function computeTimeseriesDataInterval(
   let index = intervalCounts.findIndex((size) => size !== 1);
 
   // special case to check: did we get tripped up by the week interval?
-  const weekIndex = TIMESERIES_INTERVALS.findIndex((i) => i.unit === "week");
+  const weekIndex = DATA_TIMESERIES_INTERVALS.findIndex(
+    (i) => i.unit === "week",
+  );
   if (index === weekIndex && intervalCounts[weekIndex + 1] === 1) {
     index = intervalCounts.findIndex(
       (size, index) => size !== 1 && index > weekIndex,
@@ -131,11 +147,11 @@ export function computeTimeseriesDataInterval(
 
   // if we ran off the end of intervals, return the last one
   if (index === -1) {
-    return TIMESERIES_INTERVALS[TIMESERIES_INTERVALS.length - 1];
+    return DATA_TIMESERIES_INTERVALS[DATA_TIMESERIES_INTERVALS.length - 1];
   }
 
   // index currently points to the first item with multiple values, so move it to the previous interval
-  return TIMESERIES_INTERVALS[index - 1];
+  return DATA_TIMESERIES_INTERVALS[index - 1];
 }
 
 // ------------------------- Computing the TIMESERIES_INTERVALS entry to use for a chart ------------------------- //
@@ -176,21 +192,24 @@ export function computeTimeseriesTicksInterval(
   const minTickCount = 2;
   // first we want to find out where in TIMESERIES_INTERVALS we should start looking for a good match. Find the
   // interval with a matching interval and count (e.g. `hour` and `1`) and we'll start there.
-  let initialIndex = _.findIndex(TIMESERIES_INTERVALS, ({ unit, count }) => {
-    return unit === xInterval.unit && count === xInterval.count;
-  });
+  let initialIndex = _.findIndex(
+    TICKS_TIMESERIES_INTERVALS,
+    ({ unit, count }) => {
+      return unit === xInterval.unit && count === xInterval.count;
+    },
+  );
   // if we weren't able to find something matching then we'll start from the beginning and try everything
   if (initialIndex === -1) {
     initialIndex = 0;
   }
 
   // Fallback value: the largest tick interval (every 100 years)
-  let intervalIndex = TIMESERIES_INTERVALS.length - 1;
+  let intervalIndex = TICKS_TIMESERIES_INTERVALS.length - 1;
 
   // Looking for the first interval which produces less ticks than the maxTicksCount.
   // However, if it produces less than minTickCount ticks we prefer taking a smaller previous interval.
-  for (let i = initialIndex; i < TIMESERIES_INTERVALS.length; i++) {
-    const interval = TIMESERIES_INTERVALS[i];
+  for (let i = initialIndex; i < TICKS_TIMESERIES_INTERVALS.length; i++) {
+    const interval = TICKS_TIMESERIES_INTERVALS[i];
     const maxTickCount = maxTicksForChartWidth(
       chartMeasurements,
       interval.unit,
@@ -212,7 +231,7 @@ export function computeTimeseriesTicksInterval(
     }
   }
 
-  return TIMESERIES_INTERVALS[intervalIndex];
+  return TICKS_TIMESERIES_INTERVALS[intervalIndex];
 }
 
 export function getFormatter(

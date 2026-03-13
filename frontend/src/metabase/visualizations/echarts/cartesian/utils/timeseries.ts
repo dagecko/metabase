@@ -22,6 +22,7 @@ import type {
 
 import type { ShowWarning } from "../../types";
 import type { ChartMeasurements } from "../chart-measurements/types";
+import { getPaddedAxisLabel } from "../option/utils";
 
 export const tryGetDate = (rowValue: RowValue): Dayjs | null => {
   if (typeof rowValue === "boolean") {
@@ -151,8 +152,14 @@ export function getTimeSeriesIntervalDuration(interval: TimeSeriesInterval) {
 /// for example a "5 seconds" interval over a time range of a minute should have an expected tick count of 20.
 function expectedTickCount(
   interval: TimeSeriesInterval,
-  timeRangeMilliseconds: number,
+  xDomain: ContinuousDomain,
 ) {
+  if (interval.unit === "year") {
+    // leap years often make us think we need an extra tick, so use dayjs to calculate the diff instead
+    const years = dayjs(xDomain[1]).diff(dayjs(xDomain[0]), "year", true);
+    return Math.ceil(years / interval.count);
+  }
+  const timeRangeMilliseconds = xDomain[1] - xDomain[0];
   return Math.ceil(
     timeRangeMilliseconds / getTimeSeriesIntervalDuration(interval),
   );
@@ -166,7 +173,6 @@ export function computeTimeseriesTicksInterval(
   chartMeasurements: ChartMeasurements,
   formatter: TimeSeriesAxisFormatter,
 ) {
-  const timeRangeMilliseconds = getTimeRangeMilliseconds(xDomain);
   const minTickCount = 2;
   // first we want to find out where in TIMESERIES_INTERVALS we should start looking for a good match. Find the
   // interval with a matching interval and count (e.g. `hour` and `1`) and we'll start there.
@@ -190,10 +196,7 @@ export function computeTimeseriesTicksInterval(
       interval.unit,
       getFormatter(formatter, xInterval.unit, interval.unit),
     );
-    const intervalTicksCount = expectedTickCount(
-      interval,
-      timeRangeMilliseconds,
-    );
+    const intervalTicksCount = expectedTickCount(interval, xDomain);
 
     if (intervalTicksCount > maxTickCount) {
       continue;
@@ -230,18 +233,20 @@ function maxTicksForChartWidth(
   unit: CartesianChartDateTimeAbsoluteUnit,
   formatter: TimeSeriesAxisFormatter,
 ) {
+  const availableWidth =
+    chartMeasurements.outerWidth -
+    chartMeasurements.padding.left -
+    chartMeasurements.padding.right;
   const TICK_BUFFER_PIXELS = 10;
   const representativeDates = getRepresentativeDates(unit).map((date) =>
-    formatter(date),
+    getPaddedAxisLabel(formatter(date)),
   );
   const longestDate = representativeDates.reduce((longest, date) => {
     return date.length > longest.length ? date : longest;
   });
   const longestDateWidth =
     chartMeasurements.ticksDimensions.getXTickWidth(longestDate);
-  return Math.floor(
-    chartMeasurements.boundaryWidth / (longestDateWidth + TICK_BUFFER_PIXELS),
-  );
+  return Math.floor(availableWidth / (longestDateWidth + TICK_BUFFER_PIXELS));
 }
 
 /**
@@ -292,14 +297,6 @@ function getRepresentativeDates(unit: CartesianChartDateTimeAbsoluteUnit) {
     }
   }
   return out;
-}
-
-/// return the range, in milliseconds, of the xDomain. ("Range" in this sense refers to the total "width"" of the
-/// chart in milliseconds.)
-function getTimeRangeMilliseconds(xDomain: ContinuousDomain) {
-  const startTime = xDomain[0]; // these are UNIX timestamps in milliseconds
-  const endTime = xDomain[1];
-  return endTime - startTime;
 }
 
 export function getLargestInterval(intervals: TimeSeriesInterval[]) {

@@ -32,11 +32,11 @@ import {
 } from "metabase-types/api/mocks";
 
 function createMockChartMeasurements(
-  boundaryWidth: number,
+  outerWidth: number,
   xTickWidth: number,
 ): ChartMeasurements {
   return {
-    boundaryWidth,
+    boundaryWidth: 0,
     ticksDimensions: {
       getXTickWidth: () => xTickWidth,
       yTicksWidthLeft: 0,
@@ -48,6 +48,7 @@ function createMockChartMeasurements(
     padding: { top: 0, bottom: 0, left: 0, right: 0 },
     bounds: { top: 0, bottom: 0, left: 0, right: 0 },
     outerHeight: 0,
+    outerWidth,
     axisEnabledSetting: true,
   };
 }
@@ -161,7 +162,7 @@ describe("visualization.lib.timeseries", () => {
     type TickInput = {
       xDomain: ContinuousDomain;
       xInterval: TimeSeriesInterval;
-      boundaryWidth: number;
+      outerWidth: number;
       xTickWidth: number;
     };
     type TickExpected = {
@@ -177,7 +178,7 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          boundaryWidth: 1920,
+          outerWidth: 1920,
           xTickWidth: 55,
         },
         { expectedUnit: "month", expectedCount: 1 },
@@ -190,7 +191,7 @@ describe("visualization.lib.timeseries", () => {
             new Date("2021-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          boundaryWidth: 700,
+          outerWidth: 700,
           xTickWidth: 55,
         },
         { expectedUnit: "quarter", expectedCount: 1 },
@@ -200,10 +201,10 @@ describe("visualization.lib.timeseries", () => {
         {
           xDomain: [
             new Date("2020-01-01").getTime(),
-            new Date("2021-01-01").getTime(),
+            new Date("2022-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          boundaryWidth: 300,
+          outerWidth: 300,
           xTickWidth: 55,
         },
         { expectedUnit: "year", expectedCount: 1 },
@@ -214,7 +215,7 @@ describe("visualization.lib.timeseries", () => {
       //   {
       //     xDomain: [new Date("2020-01-01"), new Date("2021-01-01")],
       //     xInterval: { interval: "month", count: 3 },
-      //     boundaryWidth: 1920,
+      //     outerWidth: 1920,
       //     xTickWidth: 55,
       //   },
       //   { expectedUnit: "month", expectedCount: 3 },
@@ -224,10 +225,10 @@ describe("visualization.lib.timeseries", () => {
         {
           xDomain: [
             new Date("2020-01-01").getTime(),
-            new Date("2021-01-01").getTime(),
+            new Date("2022-01-01").getTime(),
           ],
           xInterval: { unit: "month", count: 1 },
-          boundaryWidth: 1920,
+          outerWidth: 1920,
           xTickWidth: 418,
         },
         { expectedUnit: "year", expectedCount: 1 },
@@ -236,14 +237,14 @@ describe("visualization.lib.timeseries", () => {
 
     TEST_CASES.forEach(
       ([
-        { xDomain, xInterval, boundaryWidth, xTickWidth },
+        { xDomain, xInterval, outerWidth, xTickWidth },
         { expectedUnit, expectedCount },
       ]) => {
         it(`should return ${expectedCount} ${expectedUnit}`, () => {
           const { unit, count } = computeTimeseriesTicksInterval(
             xDomain,
             xInterval,
-            createMockChartMeasurements(boundaryWidth, xTickWidth),
+            createMockChartMeasurements(outerWidth, xTickWidth),
             mockFormatter,
           );
           expect(unit).toBe(expectedUnit);

@@ -836,6 +836,7 @@ export const getChartMeasurements = (
     bounds,
     boundaryWidth,
     outerHeight: height,
+    outerWidth: width,
     axisEnabledSetting,
     stackedBarTicksRotation,
   };

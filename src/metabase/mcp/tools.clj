@@ -23,7 +23,8 @@
   "Generate tools manifest from agent API endpoint metadata."
   []
   (tools-manifest/generate-tools-manifest
-   {'metabase.agent-api.api "/api/agent"}))
+   {'metabase.agent-api.api                    "/api/agent"
+    'metabase-enterprise.agent-api.workspace "/api/agent/v1/workspace"}))
 
 (def ^:private manifest-delay
   (delay (generate-manifest)))
@@ -170,15 +171,16 @@
   (str/replace-first path #"^/api/agent" ""))
 
 (defn- invoke-agent-api-with-params
-  "Invoke an Agent API endpoint with query parameters for GET/DELETE requests.
-   Appends `params` as a query string to `path`."
+  "Invoke an Agent API endpoint, routing remaining params correctly by HTTP method.
+   GET/HEAD/DELETE: params become query string.
+   POST/PUT/PATCH: params become request body."
   [method path token-scopes params]
-  (if (and (seq params) (not= :post method))
+  (if (and (seq params) (#{:get :head :delete} method))
     (let [query-string (->> params
                             (map (fn [[k v]] (str (name k) "=" (URLEncoder/encode (str v) "UTF-8"))))
                             (str/join "&"))]
       (invoke-agent-api method (str path "?" query-string) token-scopes))
-    (invoke-agent-api method path token-scopes (when (= :post method) params))))
+    (invoke-agent-api method path token-scopes (when (#{:post :put :patch} method) params))))
 
 (defn- dispatch-via-agent-api
   "Generic dispatch for tools whose responseFormat is \"json\".

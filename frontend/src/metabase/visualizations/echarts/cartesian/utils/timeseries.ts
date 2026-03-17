@@ -164,21 +164,50 @@ export function getTimeSeriesIntervalDuration(interval: TimeSeriesInterval) {
   return dayjs(0).add(interval.count, interval.unit).valueOf();
 }
 
-/// Return the number of ticks we can expect to see over a time range using the TIMESERIES_INTERVALS entry interval.
-/// for example a "5 seconds" interval over a time range of a minute should have an expected tick count of 20.
-function expectedTickCount(
+// Counts interval boundary crossings within the domain
+export function expectedTickCount(
   interval: TimeSeriesInterval,
   xDomain: ContinuousDomain,
-) {
-  if (interval.unit === "year") {
-    // leap years often make us think we need an extra tick, so use dayjs to calculate the diff instead
-    const years = dayjs(xDomain[1]).diff(dayjs(xDomain[0]), "year", true);
-    return Math.ceil(years / interval.count);
+): number {
+  const { unit, count } = interval;
+  const start = dayjs.utc(xDomain[0]);
+  const end = dayjs.utc(xDomain[1]);
+
+  const startTrunc = start.startOf(unit);
+  const endTrunc = end.startOf(unit);
+
+  const diffUnits = endTrunc.diff(startTrunc, unit);
+
+  let startIdx: number;
+  if (unit === "year") {
+    startIdx = startTrunc.year();
+  } else if (unit === "quarter") {
+    startIdx = startTrunc.quarter() - 1;
+  } else if (unit === "month") {
+    startIdx = startTrunc.month();
+  } else if (unit === "week") {
+    startIdx = startTrunc.week();
+  } else if (unit === "day") {
+    startIdx = startTrunc.day();
+  } else if (unit === "hour") {
+    startIdx = startTrunc.hour();
+  } else if (unit === "minute") {
+    startIdx = startTrunc.minute();
+  } else if (unit === "second") {
+    startIdx = startTrunc.second();
+  } else {
+    startIdx = startTrunc.valueOf();
   }
-  const timeRangeMilliseconds = xDomain[1] - xDomain[0];
-  return Math.ceil(
-    timeRangeMilliseconds / getTimeSeriesIntervalDuration(interval),
-  );
+
+  const startAligned = Math.ceil(startIdx / count) * count;
+  const endAligned = Math.floor((startIdx + diffUnits) / count) * count;
+
+  const diffAligned = (endAligned - startAligned) / count;
+
+  if (start.valueOf() === startTrunc.valueOf() || startIdx < startAligned) {
+    return diffAligned + 1;
+  }
+  return diffAligned;
 }
 
 /// Get the appropriate tick interval option from the TIMESERIES_INTERVALS above based on the xAxis bucketing

@@ -146,11 +146,13 @@
                            :hard-ttl        (t/seconds 1)})]
       (with-redefs [mdb/db-is-set-up? (constantly false)]
         (is (= {:valid false
+                :canonical? false
                 :status "Unable to validate token"
                 :error-details "Metabase DB is not yet set up"}
                (token-check/-check-token checker token)))
         (dotimes [_ 50] (token-check/-check-token checker token))
         (is (= {:valid false
+                :canonical? false
                 :status "Unable to validate token"
                 :error-details "Metabase DB is not yet set up"}
                (token-check/-check-token checker token))))
@@ -175,7 +177,7 @@
     (let [token       (tu/random-token)
           call-count  (atom 0)
           good-body   "{\"valid\":true,\"status\":\"fake\",\"features\":[\"fake\",\"features\"]}"
-          good-resp   {:valid true, :status "fake", :features ["fake" "features"]}
+          good-resp   {:valid true, :canonical? true, :status "fake", :features ["fake" "features"]}
           local-cache (atom {})
           ;; no circuit breaker — it carries state between runs and causes flakes
           checker     (binding [token-check/*customize-checker* true]
@@ -210,6 +212,7 @@
             (age-cache-entry! token (+ (u/hours->ms 36) 1000) local-cache)
             (Thread/sleep 60) ;; expire local-cached-token-checker
             (is (= {:valid         false
+                    :canonical?    false
                     :status        "Unable to validate token"
                     :error-details "network failure!"}
                    (token-check/check-token checker token)))))
@@ -219,7 +222,7 @@
 (deftest token-status-setting-test
   (testing "If a `premium-embedding-token` has been set, the `token-status` setting should return the response
             from the store.metabase.com endpoint for that token."
-    (is (= {:valid false, :status "Token does not exist."}
+    (is (= {:valid false, :canonical? true, :status "Token does not exist."}
            (token-check/check-token (tu/random-token)))))
   (testing "If premium-embedding-token is nil, the token-status setting should also be nil."
     (mt/with-temporary-setting-values [premium-embedding-token nil]
@@ -557,6 +560,7 @@
           token   (tu/random-token)]
       ;; error-catching wraps it, so we get the error-details response
       (is (= {:valid false
+              :canonical? false
               :status "Unable to validate token"
               :error-details "MetaStore unreachable"}
              (token-check/-check-token checker token))))))

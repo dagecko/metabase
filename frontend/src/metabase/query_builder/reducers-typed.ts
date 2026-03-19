@@ -6,25 +6,27 @@ import {
   updateCardEmbeddingParams,
   updateCardEnableEmbedding,
 } from "metabase/api";
-import type { Card } from "metabase-types/api";
-
 import {
-  API_CREATE_QUESTION,
   API_UPDATE_QUESTION,
   CANCEL_QUESTION_CHANGES,
   CLOSE_QB,
   INITIALIZE_QB,
   QUERY_COMPLETED,
-  RELOAD_CARD,
   RESET_QB,
-  SET_CARD_AND_RUN,
   SOFT_RELOAD_CARD,
+} from "metabase/redux/query-builder";
+import type { Card } from "metabase-types/api";
+
+import {
+  API_CREATE_QUESTION,
+  RELOAD_CARD,
+  SET_CARD_AND_RUN,
   UPDATE_QUESTION,
 } from "./actions";
 
 // the card that is actively being worked on
 export const card = createReducer<Card | null>(null, (builder) => {
-  // @ts-expect-error — Draft<Card> triggers TS2589 due to Card's recursive types (StructuredQuery, Field, etc.)
+  // @ts-expect-error — TS2589: deep type instantiation on builder chain with Card's recursive types
   builder
     .addCase(RESET_QB, () => null)
     .addCase(CLOSE_QB, () => null)

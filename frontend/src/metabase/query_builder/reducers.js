@@ -2,12 +2,9 @@ import { assoc, merge } from "icepick";
 import { handleActions } from "redux-actions";
 import _ from "underscore";
 
-import {
-  EDIT_QUESTION,
-  NAVIGATE_TO_NEW_CARD,
-} from "metabase/dashboard/actions";
 import { TimelineEvents } from "metabase/entities/timeline-events";
 import { copy } from "metabase/lib/utils";
+import { EDIT_QUESTION, NAVIGATE_TO_NEW_CARD } from "metabase/redux/dashboard";
 
 import {
   API_CREATE_QUESTION,

@@ -9,6 +9,7 @@ import { DataStudioToolbarButton } from "metabase/data-studio/query-builder/comp
 import { getLibraryCollectionType } from "metabase/data-studio/utils";
 import { useDispatch } from "metabase/lib/redux";
 import { useRegisterShortcut } from "metabase/palette/hooks/useRegisterShortcut";
+import { runQuestionQuery } from "metabase/query_builder/actions";
 import { QuestionMoreActionsMenu } from "metabase/query_builder/components/view/ViewHeader/components/QuestionActions/QuestionMoreActionsMenu";
 import type { QueryModalType } from "metabase/querying/constants";
 import { uploadFile } from "metabase/redux/uploads";
@@ -86,7 +87,7 @@ export const QuestionActions = ({
         uploadFile({
           file,
           tableId: question._card.based_on_upload,
-          reloadQuestionData: true,
+          onUploadComplete: () => dispatch(runQuestionQuery()),
           uploadMode,
         }),
       );

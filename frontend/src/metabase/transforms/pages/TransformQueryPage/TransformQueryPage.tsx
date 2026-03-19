@@ -37,7 +37,6 @@ import {
   type TransformEditorProps,
 } from "../../components/TransformEditor";
 import { TransformHeader } from "../../components/TransformHeader";
-import { useRegisterMetabotTransformContext } from "../../hooks/use-register-transform-metabot-context";
 import { useSourceState } from "../../hooks/use-source-state";
 import { isCompleteSource } from "../../utils";
 
@@ -127,8 +126,6 @@ function TransformQueryPageBody({
       ? (transform.last_run.message ?? undefined)
       : undefined;
   }, [transform.last_run]);
-
-  useRegisterMetabotTransformContext(transform, source, lastRunError);
 
   const {
     checkData,
@@ -262,6 +259,8 @@ function TransformQueryPageBody({
               onRejectProposed={rejectProposed}
               transform={transform}
               readOnly={readOnly}
+              metabotError={lastRunError}
+              withMetabotContext
             />
           )}
         </Box>

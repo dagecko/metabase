@@ -8,9 +8,11 @@ import {
   type QueryEditorUiState,
 } from "metabase/querying/editor/components/QueryEditor";
 import { getMetadata } from "metabase/selectors/metadata";
+import { useRegisterMetabotTransformContext } from "metabase/transforms/hooks/use-register-transform-metabot-context";
 import * as Lib from "metabase-lib";
 import type {
   Database,
+  DatasetError,
   DatasetQuery,
   QueryTransformSource,
   Transform,
@@ -34,6 +36,21 @@ export type TransformEditorProps = {
   transform?: Transform;
   isEditMode?: boolean;
   readOnly?: boolean;
+  metabotError?: DatasetError;
+  withMetabotContext?: boolean;
+};
+
+const MetabotTransformContextRegistration = ({
+  transform,
+  source,
+  error,
+}: {
+  transform?: Transform;
+  source: QueryTransformSource;
+  error?: DatasetError;
+}) => {
+  useRegisterMetabotTransformContext(transform, source, error);
+  return null;
 };
 
 export function TransformEditor({
@@ -51,6 +68,8 @@ export function TransformEditor({
   transform,
   isEditMode,
   readOnly,
+  metabotError,
+  withMetabotContext,
 }: TransformEditorProps) {
   const metadata = useSelector(getMetadata);
   const query = useMemo(
@@ -87,33 +106,42 @@ export function TransformEditor({
   };
 
   return (
-    <QueryEditor
-      query={query}
-      uiState={uiState}
-      uiOptions={mergedUiOptions}
-      proposedQuery={proposedQuery}
-      onChangeQuery={handleQueryChange}
-      onChangeUiState={onChangeUiState}
-      onAcceptProposed={onAcceptProposed}
-      onRejectProposed={onRejectProposed}
-      onRunQueryStart={onRunQueryStart}
-      onBlur={onBlur}
-      topBarInnerContent={
-        showEditButton &&
-        (PLUGIN_WORKSPACES.isEnabled && transform ? (
-          <PLUGIN_WORKSPACES.EditTransformMenu transform={transform} />
-        ) : (
-          <EditDefinitionButton
-            bg="transparent"
-            fz="sm"
-            h="1.5rem"
-            px="sm"
-            size="xs"
-            transformId={transform.id}
-          />
-        ))
-      }
-      parametersAreUserVisible={false}
-    />
+    <>
+      {withMetabotContext && (
+        <MetabotTransformContextRegistration
+          transform={transform}
+          source={source}
+          error={metabotError}
+        />
+      )}
+      <QueryEditor
+        query={query}
+        uiState={uiState}
+        uiOptions={mergedUiOptions}
+        proposedQuery={proposedQuery}
+        onChangeQuery={handleQueryChange}
+        onChangeUiState={onChangeUiState}
+        onAcceptProposed={onAcceptProposed}
+        onRejectProposed={onRejectProposed}
+        onRunQueryStart={onRunQueryStart}
+        onBlur={onBlur}
+        topBarInnerContent={
+          showEditButton &&
+          (PLUGIN_WORKSPACES.isEnabled && transform ? (
+            <PLUGIN_WORKSPACES.EditTransformMenu transform={transform} />
+          ) : (
+            <EditDefinitionButton
+              bg="transparent"
+              fz="sm"
+              h="1.5rem"
+              px="sm"
+              size="xs"
+              transformId={transform.id}
+            />
+          ))
+        }
+        parametersAreUserVisible={false}
+      />
+    </>
   );
 }

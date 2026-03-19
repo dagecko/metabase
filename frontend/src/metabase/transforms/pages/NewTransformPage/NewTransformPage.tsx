@@ -30,7 +30,6 @@ import type {
 
 import { TransformEditor } from "../../components/TransformEditor";
 import { NAME_MAX_LENGTH } from "../../constants";
-import { useRegisterMetabotTransformContext } from "../../hooks/use-register-transform-metabot-context";
 import { useSourceState } from "../../hooks/use-source-state";
 import { getValidationResult, isCompleteSource } from "../../utils";
 
@@ -98,7 +97,6 @@ function NewTransformPageBody({
   const [isModalOpened, { open: openModal, close: closeModal }] =
     useDisclosure();
   const dispatch = useDispatch();
-  useRegisterMetabotTransformContext(undefined, source);
 
   const validationResult = useMemo(() => {
     return source.type === "query"
@@ -180,6 +178,7 @@ function NewTransformPageBody({
               onChangeUiState={setUiState}
               onAcceptProposed={acceptProposed}
               onRejectProposed={rejectProposed}
+              withMetabotContext
             />
           )}
         </Box>

@@ -22,10 +22,10 @@ export function TransformsSectionLayout({
   const isTransformsEnabled = useSetting("transforms-enabled");
   const isHosted = useSetting("is-hosted?");
 
-  if (shouldShowUpsell) {
-    return <PLUGIN_TRANSFORMS.TransformsUpsellPage />;
-  } else if (!isTransformsEnabled && !isHosted) {
+  if (!isTransformsEnabled) {
     return <EnableTransformsPage />;
+  } else if (shouldShowUpsell && isHosted) {
+    return <PLUGIN_TRANSFORMS.TransformsUpsellPage />;
   }
 
   return <SectionLayout>{children}</SectionLayout>;

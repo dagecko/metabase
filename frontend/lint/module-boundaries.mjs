@@ -12,6 +12,7 @@ const sharedModules = ["common", "querying", "visualizations"];
 const featureModules = ["dashboard", "query_builder", "admin", "reference"];
 
 const elements = [
+  { type: "shared/store-types", pattern: "frontend/src/metabase-types/store/**" },
   { type: "lib/types", pattern: "frontend/src/metabase-types/*/**" },
   { type: "basic/mlv2", pattern: "frontend/src/metabase-lib/*/**" },
   ...libModules.map((name) => createElement({ type: "lib", name })),

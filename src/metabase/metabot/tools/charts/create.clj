@@ -16,13 +16,16 @@
     :progress :funnel :object :map})
 
 (defn- query->url-hash
-  "Convert an MLv2/MBQL query to a base64-encoded URL hash."
-  [query]
+  "Convert an MLv2/MBQL query to a base64-encoded URL hash.
+  When `display` is provided, includes it so the frontend renders the
+  correct visualization type instead of defaulting to table."
+  [query display]
   #_{:clj-kondo/ignore [:discouraged-var]}
   (let [dataset-query (if (and (map? query) (:lib/type query))
                         (lib/->legacy-MBQL query)
                         query)]
-    (-> {:dataset_query dataset-query}
+    (-> (cond-> {:dataset_query dataset-query}
+          display (assoc :display (name display)))
         json/encode
         (.getBytes "UTF-8")
         codecs/bytes->b64-str)))
@@ -80,7 +83,7 @@
 
     ;; Create the chart and generate navigation URL
     (let [chart-id (str (random-uuid))
-          results-url (str "/question#" (query->url-hash query))
+          results-url (str "/question#" (query->url-hash query chart-type))
           chart-data {:chart-id chart-id
                       :query-id query-id
                       :chart-type chart-type}]

@@ -1,12 +1,14 @@
 import { t } from "ttag";
 
-import { useUpdateSettingMutation } from "metabase/api";
+import { useListDatabasesQuery, useUpdateSettingMutation } from "metabase/api";
 import { DataStudioBreadcrumbs } from "metabase/data-studio/common/components/DataStudioBreadcrumbs";
 import { PageContainer } from "metabase/data-studio/common/components/PageContainer";
 import { PaneHeader } from "metabase/data-studio/common/components/PaneHeader";
 import { useSelector } from "metabase/lib/redux";
 import { getUserIsAdmin } from "metabase/selectors/user";
+import { doesDatabaseSupportTransforms } from "metabase/transforms/utils";
 import {
+  Alert,
   Button,
   Card,
   Center,
@@ -18,6 +20,7 @@ import {
   Text,
   Title,
 } from "metabase/ui";
+
 export const EnableTransformsPage = () => {
   const isAdmin = useSelector(getUserIsAdmin);
 
@@ -30,6 +33,10 @@ export const EnableTransformsPage = () => {
       value: true,
     });
 
+  const { data: databases } = useListDatabasesQuery();
+  const hasDbThatSupportsTransforms =
+    databases?.data.some(doesDatabaseSupportTransforms) ?? false;
+
   return (
     <PageContainer data-testid="enable-transform-page">
       <PaneHeader
@@ -39,7 +46,7 @@ export const EnableTransformsPage = () => {
       />
       <Center>
         <Card withBorder p="3rem" w="40rem">
-          <Stack gap="md" align="start">
+          <Stack gap="lg" align="start">
             <Title order={2}>{t`Customize and clean up your data`}</Title>
             <Text lh="1.25rem">{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
             {isAdmin && (
@@ -53,6 +60,16 @@ export const EnableTransformsPage = () => {
                   variant="primary"
                   onClick={enableTransforms}
                 >{t`Enable transforms`}</Button>
+                {!hasDbThatSupportsTransforms && (
+                  <Alert
+                    color="warning"
+                    variant="light"
+                    icon={<Icon name="warning" size={16} />}
+                    py="md"
+                  >
+                    {t`None of your connected databases have a writeable connection`}
+                  </Alert>
+                )}
               </>
             )}
           </Stack>

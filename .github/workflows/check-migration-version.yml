@@ -1,0 +1,120 @@
+name: Check Migration Versions
+
+on:
+  pull_request:
+    paths:
+      - 'resources/migrations/**'
+
+concurrency:
+  group: check-migration-version-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-migration-version:
+    runs-on: ${{ vars.DEFAULT_RUNNER_KEY }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          fetch-depth: 1
+
+      - name: Fetch base branch for diff
+        run: git fetch origin "${{ github.base_ref }}" --depth=1
+
+      - name: Check migration versions
+        env:
+          CURRENT_VERSION: ${{ vars.CURRENT_VERSION }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          # Detect the current released version from remote release branches.
+          # The highest release-x.N.x branch number is the current version.
+          detect_current_version() {
+            git ls-remote --heads origin 'refs/heads/release-x.*.x' \
+              | sed -n 's|.*refs/heads/release-x\.\([0-9]*\)\.x|\1|p' \
+              | sort -n \
+              | tail -1
+          }
+
+          detected_version=$(detect_current_version)
+
+          if [[ -z "$detected_version" ]]; then
+            echo "::error::Could not detect current version from release branches."
+            exit 1
+          fi
+
+          echo "Detected current version from release branches: ${detected_version}"
+
+          # Cross-check with the env var if it's set
+          if [[ -n "${CURRENT_VERSION:-}" ]]; then
+            if [[ "$CURRENT_VERSION" != "$detected_version" ]]; then
+              echo "::error::vars.CURRENT_VERSION (${CURRENT_VERSION}) does not match detected version from release branches (${detected_version}). Is vars.CURRENT_VERSION up to date?"
+              exit 1
+            fi
+            echo "vars.CURRENT_VERSION (${CURRENT_VERSION}) matches detected version."
+          else
+            echo "vars.CURRENT_VERSION is not set — using detected version."
+          fi
+
+          current_version="$detected_version"
+
+          # Determine the expected migration version based on the target branch
+          if [[ "$BASE_REF" == "master" ]]; then
+            expected_version=$(( current_version + 1 ))
+          elif [[ "$BASE_REF" =~ ^release-x\.([0-9]+)\.x$ ]]; then
+            expected_version="${BASH_REMATCH[1]}"
+          else
+            echo "Target branch '$BASE_REF' is not master or a release branch — skipping check."
+            exit 0
+          fi
+
+          echo "Target branch: $BASE_REF"
+          echo "Expected migration version: v${expected_version}"
+          echo ""
+
+          # Parse the diff for added changeset IDs, tracking which file they're in.
+          # This ensures we only check new/modified lines, not pre-existing changesets.
+          errors=0
+          found_any=false
+          current_file=""
+
+          while IFS= read -r line; do
+            # Track current file from diff headers
+            if [[ "$line" =~ ^\+\+\+\ b/(.*) ]]; then
+              current_file="${BASH_REMATCH[1]}"
+              continue
+            fi
+
+            # Only look at added lines with changeset IDs
+            if [[ "$line" =~ ^\+.*id:\ *v([0-9]+)\. ]]; then
+              found_any=true
+              actual_version="${BASH_REMATCH[1]}"
+
+              if [[ "$actual_version" != "$expected_version" ]]; then
+                echo "::error file=${current_file}::Found migration version v${actual_version} but expected v${expected_version} (target branch: ${BASE_REF})"
+                errors=$((errors + 1))
+              fi
+            fi
+          done < <(git diff "origin/${BASE_REF}...HEAD" -- 'resources/migrations/*.yaml' 'resources/migrations/**/*.yaml')
+
+          if [[ "$found_any" == "false" ]]; then
+            echo "No new changeset IDs in diff."
+            exit 0
+          fi
+
+          if [[ "$errors" -gt 0 ]]; then
+            echo ""
+            echo "ERROR: ${errors} changeset(s) have the wrong version."
+            echo ""
+            if [[ "$BASE_REF" == "master" ]]; then
+              echo "PRs targeting master should use version v$(( current_version + 1 ))."
+              echo "(Current version detected: ${current_version})"
+            else
+              echo "PRs targeting ${BASE_REF} should use version v${expected_version}."
+            fi
+            exit 1
+          fi
+
+          echo "All migration versions are correct (v${expected_version})."

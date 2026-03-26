@@ -10,7 +10,6 @@
    [metabase.lib.metadata :as lib.metadata]
    [metabase.lib.normalize :as lib.normalize]
    [metabase.metabot.settings] ; for setting definitions
-   [metabase.metabot.tools.util :as metabot.tools.u]
    [metabase.search.ingestion :as search.ingestion]
    [metabase.search.test-util :as search.tu]
    [metabase.session.models.session :as session.models]
@@ -255,17 +254,15 @@
   (field-values/get-or-create-full-field-values! (t2/select-one :model/Field :id field-id)))
 
 (defn- visible-field-id
-  "Find the field-id string for a field by display name within a table's visible columns."
+  "Find the real field ID for a field by display name within a table's visible columns."
   [table-id field-display-name]
-  (let [mp            (mt/metadata-provider)
-        query         (lib/query mp (lib.metadata/table mp table-id))
-        field-prefix  (metabot.tools.u/table-field-id-prefix table-id)
-        visible-cols  (lib/visible-columns query)]
-    (->> (keep-indexed (fn [i col]
-                         (when (= (lib/display-name query col) field-display-name)
-                           (str field-prefix i)))
-                       visible-cols)
-         first)))
+  (let [mp           (mt/metadata-provider)
+        query        (lib/query mp (lib.metadata/table mp table-id))
+        visible-cols (lib/visible-columns query)]
+    (->> visible-cols
+         (filter #(= (lib/display-name query %) field-display-name))
+         first
+         :id)))
 
 (deftest get-table-field-values-test
   (with-agent-api-setup!
@@ -292,12 +289,12 @@
 
     (testing "Returns 404 for non-existent table"
       (is (= "Not found."
-             (agent-client :crowberto :get 404 "agent/v1/table/999999/field/t999999-0/values"))))
+             (agent-client :crowberto :get 404 "agent/v1/table/999999/field/999999/values"))))
 
-    (testing "Returns 400 for invalid field-id format"
+    (testing "Returns 404 for non-existent field"
       (let [table-id (mt/id :people)]
-        (is (= "Invalid field_id format: not-a-valid-id"
-               (agent-client :crowberto :get 400 (format "agent/v1/table/%d/field/not-a-valid-id/values" table-id))))))))
+        (is (string? (:output (agent-client :crowberto :get 404
+                                            (format "agent/v1/table/%d/field/999999/values" table-id)))))))))
 
 (deftest search-test
   (with-agent-api-setup!

@@ -145,9 +145,11 @@
   {:team    "Metabot"
    :api     #{metabase.agent-api.api}
    :friends #{enterprise/agent-api}
-   :uses    #{api
+   :uses    #{agent-lib
+              api
               auth-identity
               lib
+              lib-be
               metabot
               query-processor
               request
@@ -157,6 +159,7 @@
 
   agent-lib
   {:team "Metabot"
+   :api  #{metabase.agent-lib.core}
    :uses #{lib
            util}}
 
@@ -1223,6 +1226,7 @@
               enterprise/metabot
               slackbot}
    :uses    #{activity-feed
+              agent-lib
               analytics
               analyze
               api

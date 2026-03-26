@@ -102,6 +102,7 @@ const config = {
     "app-public": "./app-public.ts",
     "app-embed": "./app-embed.ts",
     "app-embed-sdk": "./app-embed-sdk.tsx",
+
     // Stable filename (no hash) + runtime: false = self-contained bundle.
     // embed-mcp.html is a Mustache template served by the backend; cache-busting
     // is handled via ?v=<mb-version-hash> rather than HtmlWebpackPlugin injection.
@@ -110,6 +111,7 @@ const config = {
       filename: "app-embed-mcp.js",
       runtime: false,
     },
+
     "vendor-styles": "./css/vendor.css",
     styles: "./css/index.module.css",
   },
@@ -244,14 +246,14 @@ const config = {
   plugins: [
     // Extracts initial CSS into a standard stylesheet that can be loaded in parallel with JavaScript
     new rspack.CssExtractRspackPlugin({
-      chunkFilename: isDevMode ? "[id].css" : "[id].[contenthash].css",
-
       // The MCP is served from a Mustache template so it can't reference content hash.
       // It uses ?v=<mb-version-hash> for cache busting.
       filename: (path) =>
-        path.chunk?.name === "app-embed-mcp" || isDevMode
+        isDevMode || path.chunk?.name === "app-embed-mcp"
           ? "[name].css"
           : "[name].[contenthash].css",
+
+      chunkFilename: isDevMode ? "[id].css" : "[id].[contenthash].css",
 
       // We use CSS modules to scope styles, so this is safe to ignore according to the docs:
       // https://webpack.js.org/plugins/mini-css-extract-plugin/#remove-order-warnings
@@ -347,9 +349,8 @@ if (shouldEnableHotRefresh) {
   config.plugins.unshift(
     new ReactRefreshPlugin({
       overlay: false,
-      // app-embed-mcp runs in an isolated iframe with no HMR websocket.
-      // Excluding it removes the React Refresh runtime (which uses eval)
-      // and avoids CSP violations in the MCP app sandbox.
+
+      // MCP Apps runs in an isolated iframe with no HMR websocket support.
       exclude: [/node_modules/, /app-embed-mcp/],
     }),
   );

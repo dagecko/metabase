@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { t } from "ttag";
 
 import { useListDatabasesQuery, useUpdateSettingMutation } from "metabase/api";
@@ -7,10 +8,12 @@ import { PaneHeader } from "metabase/data-studio/common/components/PaneHeader";
 import { DottedBackground } from "metabase/data-studio/upsells/components/DottedBackground";
 import { LineDecorator } from "metabase/data-studio/upsells/components/LineDecorator/LineDecorator";
 import { useSelector } from "metabase/lib/redux";
+import { PLUGIN_TRANSFORMS } from "metabase/plugins";
 import { getUserIsAdmin } from "metabase/selectors/user";
 import { doesDatabaseSupportTransforms } from "metabase/transforms/utils";
 import {
   Alert,
+  Box,
   Button,
   Card,
   Flex,
@@ -22,17 +25,30 @@ import {
   Title,
 } from "metabase/ui";
 
-export const EnableTransformsPage = () => {
+export const EnableTransformsPage = ({
+  isTransformsEnabled,
+  shouldShowUpsell,
+}: {
+  isTransformsEnabled: boolean;
+  shouldShowUpsell: boolean;
+}) => {
   const isAdmin = useSelector(getUserIsAdmin);
+  const [hasAgreedToEnable, setHasAgreedToEnable] =
+    useState(isTransformsEnabled);
 
   const [updateSetting, { isLoading: updateSettingLoading }] =
     useUpdateSettingMutation();
 
-  const enableTransforms = () =>
+  const enableTransforms = () => {
+    if (shouldShowUpsell) {
+      setHasAgreedToEnable(true);
+      return;
+    }
     updateSetting({
       key: "transforms-enabled",
       value: true,
     });
+  };
 
   const { data: databases } = useListDatabasesQuery();
   const hasDbThatSupportsTransforms =
@@ -46,37 +62,51 @@ export const EnableTransformsPage = () => {
             <DataStudioBreadcrumbs>{t`Transforms`}</DataStudioBreadcrumbs>
           }
         />
-        <Flex align="center" justify="center" flex="1" pb="6rem">
-          <LineDecorator>
-            <Card withBorder p="3rem" maw="60rem">
-              <Flex>
-                <Stack gap="lg" align="start" pt="xl" pl="lg">
-                  <Title order={2}>{t`Customize and clean up your data`}</Title>
-                  <Text lh="1.25rem">{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
-                  {isAdmin && (
-                    <>
-                      <Text
-                        fw="bold"
-                        lh="1.25rem"
-                      >{t`Because transforms require write access to your database, make sure you know what you’re doing and that you understand the risks.`}</Text>
-                      <Button
-                        loading={updateSettingLoading}
-                        variant="primary"
-                        onClick={enableTransforms}
-                      >{t`Enable transforms`}</Button>
-                      {!hasDbThatSupportsTransforms && (
-                        <Alert
-                          color="warning"
-                          variant="light"
-                          icon={<Icon name="warning" size={16} />}
-                          py="md"
-                        >
-                          {t`None of your connected databases have a writeable connection`}
-                        </Alert>
-                      )}
-                    </>
-                  )}
-                </Stack>
+        <Flex align="center" justify="center" flex="1" pb="6rem" w="100%">
+          <LineDecorator maw="60rem" w="100%">
+            <Card withBorder p="3rem" w="100%">
+              <Flex w="100%">
+                {!hasAgreedToEnable && (
+                  <Stack gap="lg" align="start" pt="xl" pl="lg">
+                    <Title
+                      order={2}
+                    >{t`Customize and clean up your data`}</Title>
+                    <Text
+                      c="text-secondary"
+                      fz="1rem"
+                      lh={1.4}
+                    >{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
+                    {isAdmin && (
+                      <>
+                        <Text
+                          c="text-secondary"
+                          fz="1rem"
+                          lh={1.4}
+                          fw="bold"
+                        >{t`Because transforms require write access to your database, make sure you know what you’re doing and that you understand the risks.`}</Text>
+                        <Button
+                          loading={updateSettingLoading}
+                          variant="primary"
+                          onClick={enableTransforms}
+                        >{t`Enable transforms`}</Button>
+                        {!hasDbThatSupportsTransforms && (
+                          <Alert
+                            color="warning"
+                            variant="light"
+                            icon={<Icon name="warning" size={16} />}
+                            py="md"
+                          >
+                            {t`None of your connected databases have a writeable connection`}
+                          </Alert>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+                )}
+                <Box flex={1} display={!hasAgreedToEnable ? "none" : undefined}>
+                  {/* Mounted while hidden to pre-fetch anything it might need */}
+                  <PLUGIN_TRANSFORMS.TransformsUpsellPage />
+                </Box>
                 <Stack flex="0 0 16rem" ml="4rem">
                   <SimpleCard
                     icon="sql"

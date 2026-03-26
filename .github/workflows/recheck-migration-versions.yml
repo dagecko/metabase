@@ -10,6 +10,11 @@ concurrency:
   group: recheck-migration-versions-${{ github.ref_name }}
   cancel-in-progress: true
 
+# This workflow needs a token with:
+#   actions: write    — to re-run workflow runs via `gh run rerun`
+#   pull-requests: read — to list open PRs and their changed files
+# The default GITHUB_TOKEN may not have actions:write depending on repo settings.
+# If re-runs fail with 403s, the repo owner needs to grant this permission.
 permissions:
   actions: write
   pull-requests: read

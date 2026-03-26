@@ -1,9 +1,13 @@
+import { useCallback } from "react";
 import { jt, t } from "ttag";
 
+import { useUpdateSettingMutation } from "metabase/api/settings";
 import { LoadingAndErrorWrapper } from "metabase/common/components/LoadingAndErrorWrapper";
 import { useSelector } from "metabase/lib/redux";
+import { useMetadataToasts } from "metabase/metadata/hooks/useMetadataToasts";
 import { getStoreUsers } from "metabase/selectors/store-users";
 import { Button, Stack, Text, Title } from "metabase/ui";
+import { usePurchaseCloudAddOnMutation } from "metabase-enterprise/api/cloud-add-ons";
 
 import { useTransformsBilling } from "../../hooks/useTransformsBilling";
 
@@ -13,6 +17,7 @@ import { useTransformsBilling } from "../../hooks/useTransformsBilling";
  */
 export function TransformsUpsellPage() {
   const { isStoreUser } = useSelector(getStoreUsers);
+  const [updateSetting] = useUpdateSettingMutation();
 
   // TODO: Check for unused props in useTransformsBilling
   const {
@@ -26,6 +31,27 @@ export function TransformsUpsellPage() {
   const hasData =
     billingPeriodMonths !== undefined &&
     (basicTransformsAddOn || advancedTransformsAddOn);
+
+  const { sendErrorToast } = useMetadataToasts();
+  const [purchaseCloudAddOn, { isLoading: isPurchasing }] =
+    usePurchaseCloudAddOnMutation();
+  const handlePurchase = useCallback(async () => {
+    try {
+      await updateSetting({
+        key: "transforms-enabled",
+        value: true,
+      }).unwrap();
+      await purchaseCloudAddOn({
+        // TODO: Is this the right product type? `-metered` is a 404.
+        product_type: "transforms-basic",
+      }).unwrap();
+      window.location.reload();
+    } catch {
+      sendErrorToast(
+        t`It looks like something went wrong. Please refresh the page and try again.`,
+      );
+    }
+  }, [purchaseCloudAddOn, sendErrorToast, updateSetting]);
 
   // TODO: Should there be an admin check?
   const canUserPurchase = hasData && isStoreUser;
@@ -62,10 +88,9 @@ export function TransformsUpsellPage() {
       {canUserPurchase && (
         <>
           <Button
-            // TODO
-            // loading={updateSettingLoading}
+            loading={isPurchasing}
             variant="primary"
-            // onClick={enableTransforms}
+            onClick={handlePurchase}
           >{t`Agree and continue`}</Button>
         </>
       )}

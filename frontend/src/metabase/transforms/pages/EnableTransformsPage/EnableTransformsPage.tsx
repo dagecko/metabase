@@ -6,7 +6,7 @@ import { DataStudioBreadcrumbs } from "metabase/data-studio/common/components/Da
 import { PageContainer } from "metabase/data-studio/common/components/PageContainer";
 import { PaneHeader } from "metabase/data-studio/common/components/PaneHeader";
 import { DottedBackground } from "metabase/data-studio/upsells/components/DottedBackground";
-import { LineDecorator } from "metabase/data-studio/upsells/components/LineDecorator/LineDecorator";
+import { LineDecorator } from "metabase/data-studio/upsells/components/LineDecorator";
 import { useSelector } from "metabase/lib/redux";
 import { PLUGIN_TRANSFORMS } from "metabase/plugins";
 import { getUserIsAdmin } from "metabase/selectors/user";
@@ -56,16 +56,25 @@ export const EnableTransformsPage = ({
 
   return (
     <DottedBackground>
-      <PageContainer data-testid="enable-transform-page">
+      <PageContainer
+        data-testid="enable-transform-page"
+        style={{ overflow: "hidden" }}
+        gap={0}
+      >
         <PaneHeader
           breadcrumbs={
             <DataStudioBreadcrumbs>{t`Transforms`}</DataStudioBreadcrumbs>
           }
         />
-        <Flex align="center" justify="center" flex="1" pb="6rem" w="100%">
-          <LineDecorator maw="60rem" w="100%">
-            <Card withBorder p="3rem" w="100%">
-              <Flex w="100%">
+        <Flex
+          flex={1}
+          justify="center"
+          pos="relative"
+          pt={{ sm: "1vh", md: "2vh", lg: "4vh", xl: "8vh" }}
+        >
+          <LineDecorator pos="absolute" mah="100%">
+            <Card withBorder maw="60rem" p={0}>
+              <Flex w="100%" p="3rem" style={{ overflow: "auto" }}>
                 {!hasAgreedToEnable && (
                   <Stack gap="lg" align="start" pt="xl" pl="lg">
                     <Title
@@ -77,7 +86,7 @@ export const EnableTransformsPage = ({
                       lh={1.4}
                     >{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
                     {isAdmin && (
-                      <>
+                      <Stack gap="lg" align="start">
                         <Text
                           c="text-secondary"
                           fz="1rem"
@@ -99,7 +108,7 @@ export const EnableTransformsPage = ({
                             {t`None of your connected databases have a writeable connection`}
                           </Alert>
                         )}
-                      </>
+                      </Stack>
                     )}
                   </Stack>
                 )}
@@ -107,7 +116,7 @@ export const EnableTransformsPage = ({
                   {/* Mounted while hidden to pre-fetch anything it might need */}
                   <PLUGIN_TRANSFORMS.TransformsUpsellPage />
                 </Box>
-                <Stack flex="0 0 16rem" ml="4rem">
+                <Stack flex="0 0 30%" ml="4rem">
                   <SimpleCard
                     icon="sql"
                     title={t`Custom tables`}

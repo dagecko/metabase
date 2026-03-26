@@ -4,6 +4,8 @@ import { useListDatabasesQuery, useUpdateSettingMutation } from "metabase/api";
 import { DataStudioBreadcrumbs } from "metabase/data-studio/common/components/DataStudioBreadcrumbs";
 import { PageContainer } from "metabase/data-studio/common/components/PageContainer";
 import { PaneHeader } from "metabase/data-studio/common/components/PaneHeader";
+import { DottedBackground } from "metabase/data-studio/upsells/components/DottedBackground";
+import { LineDecorator } from "metabase/data-studio/upsells/components/LineDecorator/LineDecorator";
 import { useSelector } from "metabase/lib/redux";
 import { getUserIsAdmin } from "metabase/selectors/user";
 import { doesDatabaseSupportTransforms } from "metabase/transforms/utils";
@@ -11,11 +13,10 @@ import {
   Alert,
   Button,
   Card,
-  Center,
+  Flex,
   Group,
   Icon,
   type IconName,
-  SimpleGrid,
   Stack,
   Text,
   Title,
@@ -38,66 +39,72 @@ export const EnableTransformsPage = () => {
     databases?.data.some(doesDatabaseSupportTransforms) ?? false;
 
   return (
-    <PageContainer data-testid="enable-transform-page">
-      <PaneHeader
-        breadcrumbs={
-          <DataStudioBreadcrumbs>{t`Transforms`}</DataStudioBreadcrumbs>
-        }
-      />
-      <Center>
-        <Card withBorder p="3rem" w="40rem">
-          <Stack gap="lg" align="start">
-            <Title order={2}>{t`Customize and clean up your data`}</Title>
-            <Text lh="1.25rem">{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
-            {isAdmin && (
-              <>
-                <Text
-                  fw="bold"
-                  lh="1.25rem"
-                >{t`Because transforms require write access to your database, make sure you know what you’re doing and that you understand the risks.`}</Text>
-                <Button
-                  loading={updateSettingLoading}
-                  variant="primary"
-                  onClick={enableTransforms}
-                >{t`Enable transforms`}</Button>
-                {!hasDbThatSupportsTransforms && (
-                  <Alert
-                    color="warning"
-                    variant="light"
-                    icon={<Icon name="warning" size={16} />}
-                    py="md"
-                  >
-                    {t`None of your connected databases have a writeable connection`}
-                  </Alert>
-                )}
-              </>
-            )}
-          </Stack>
-          <SimpleGrid cols={2} mt="3rem" spacing="sm">
-            <SimpleCard
-              icon="sql"
-              title={t`Custom tables`}
-              description={t`Create the tables your end users need with SQL queries`}
-            />
-            <SimpleCard
-              icon="clock"
-              title={t`Smart scheduling`}
-              description={t`Tell your transforms when to run by assigning tags`}
-            />
-            <SimpleCard
-              icon="eye"
-              title={t`Observability`}
-              description={t`See which transforms ran, and when`}
-            />
-            <SimpleCard
-              icon="lock"
-              title={t`Permissioned`}
-              description={t`Only Admins can create and run transforms`}
-            />
-          </SimpleGrid>
-        </Card>
-      </Center>
-    </PageContainer>
+    <DottedBackground>
+      <PageContainer data-testid="enable-transform-page">
+        <PaneHeader
+          breadcrumbs={
+            <DataStudioBreadcrumbs>{t`Transforms`}</DataStudioBreadcrumbs>
+          }
+        />
+        <Flex align="center" justify="center" flex="1" pb="6rem">
+          <LineDecorator>
+            <Card withBorder p="3rem" maw="60rem">
+              <Flex>
+                <Stack gap="lg" align="start" pt="xl" pl="lg">
+                  <Title order={2}>{t`Customize and clean up your data`}</Title>
+                  <Text lh="1.25rem">{t`Transforms let you create new tables within your connected databases, helping you make nicer and more self-explanatory datasets for your end users to look at and explore.`}</Text>
+                  {isAdmin && (
+                    <>
+                      <Text
+                        fw="bold"
+                        lh="1.25rem"
+                      >{t`Because transforms require write access to your database, make sure you know what you’re doing and that you understand the risks.`}</Text>
+                      <Button
+                        loading={updateSettingLoading}
+                        variant="primary"
+                        onClick={enableTransforms}
+                      >{t`Enable transforms`}</Button>
+                      {!hasDbThatSupportsTransforms && (
+                        <Alert
+                          color="warning"
+                          variant="light"
+                          icon={<Icon name="warning" size={16} />}
+                          py="md"
+                        >
+                          {t`None of your connected databases have a writeable connection`}
+                        </Alert>
+                      )}
+                    </>
+                  )}
+                </Stack>
+                <Stack flex="0 0 16rem" ml="4rem">
+                  <SimpleCard
+                    icon="sql"
+                    title={t`Custom tables`}
+                    description={t`Create the tables your end users need with SQL queries`}
+                  />
+                  <SimpleCard
+                    icon="clock"
+                    title={t`Smart scheduling`}
+                    description={t`Tell your transforms when to run by assigning tags`}
+                  />
+                  <SimpleCard
+                    icon="eye"
+                    title={t`Observability`}
+                    description={t`See which transforms ran, and when`}
+                  />
+                  <SimpleCard
+                    icon="lock"
+                    title={t`Permissioned`}
+                    description={t`Control who can create and run transforms`}
+                  />
+                </Stack>
+              </Flex>
+            </Card>
+          </LineDecorator>
+        </Flex>
+      </PageContainer>
+    </DottedBackground>
   );
 };
 

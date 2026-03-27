@@ -7,7 +7,7 @@
    [metabase.metabot.tools.resources :as read-resource]
    [metabase.test :as mt]))
 
-(deftest parse-uri-test
+(deftest ^:parallel parse-uri-test
   (testing "parses table URI"
     (is (= {:resource-type "table"
             :resource-id "123"
@@ -58,7 +58,7 @@
     (is (thrown? Exception
                  (#'read-resource/parse-uri "metabase://table")))))
 
-(deftest read-resource-validation-test
+(deftest ^:parallel read-resource-validation-test
   (testing "rejects too many URIs"
     (let [uris (vec (repeat 10 "metabase://table/123"))]
       (is (thrown-with-msg? Exception #"Too many URIs"
@@ -69,7 +69,7 @@
     (read-resource/read-resource
      {:uris [(str "metabase://table/" 1)]})))
 
-(deftest read-table-resource-test
+(deftest ^:parallel read-table-resource-test
   (mt/test-drivers #{:h2}
     (mt/with-current-user (mt/user->id :crowberto)
       (mt/with-temp [:model/Database {db-id :id} {}
@@ -96,7 +96,7 @@
                   (read-resource/read-resource
                    {:uris ["metabase://table/99999"]}))))))))
 
-(deftest read-dashboard-resource-test
+(deftest ^:parallel read-dashboard-resource-test
   (mt/with-current-user (mt/user->id :crowberto)
     (mt/with-temp [:model/Dashboard {dashboard-id :id dashboard-name :name}
                    {:name "Sales Overview"}]
@@ -114,7 +114,7 @@
         (is (=? {:resources [{:error string?}]}
                 (read-resource/read-resource {:uris ["metabase://dashboard/99999"]})))))))
 
-(deftest read-transform-resource-test
+(deftest ^:parallel read-transform-resource-test
   (mt/with-premium-features #{:metabot-v3 :transforms}
     (mt/with-current-user (mt/user->id :crowberto)
       (mt/with-temp [:model/Transform {transform-id :id transform-name :name}
@@ -136,7 +136,7 @@
           (is (=? {:resources [{:error string?}]}
                   (read-resource/read-resource {:uris ["metabase://transform/99999"]}))))))))
 
-(deftest format-resources-test
+(deftest ^:parallel format-resources-test
   (testing "formats resources with content"
     (let [resources [{:uri "metabase://table/123"
                       :content {:formatted "Table details here"}}]

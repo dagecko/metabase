@@ -355,13 +355,13 @@
              (mt/user-http-request :crowberto :get 200 "metabot/settings"
                                    :provider "openai"))))))
 
-(deftest settings-permissions-test
+(deftest ^:parallel settings-permissions-test
   (mt/user-http-request :rasta :get 403 "metabot/settings" :provider "anthropic")
   (mt/user-http-request :rasta :put 403 "metabot/settings"
                         {:provider "anthropic"
                          :model    "claude-haiku-4-5"}))
 
-(deftest endpoints-require-authentication-test
+(deftest ^:parallel endpoints-require-authentication-test
   (mt/with-premium-features #{:metabot-v3}
     (testing "Metabot v3 endpoints require authentication"
       (testing "/agent-streaming"
@@ -441,7 +441,7 @@
                                              :metabot_id metabot.config/embedded-metabot-id
                                              :conversation_id (str (random-uuid))))))))))))
 
-(deftest extract-usage-test
+(deftest ^:parallel extract-usage-test
   (testing "takes last cumulative usage per model"
     (is (= {"gpt-4" {:prompt 250 :completion 50}}
            (#'api/extract-usage
@@ -466,7 +466,7 @@
            (#'api/extract-usage
             [{:type :usage :usage {:promptTokens 50 :completionTokens 10}}])))))
 
-(deftest combine-text-parts-xf-test
+(deftest ^:parallel combine-text-parts-xf-test
   (testing "passes through non-text parts"
     (is (= [{:type :tool, :id 1} {:type :tool, :id 2}]
            (into [] (#'api/combine-text-parts-xf)

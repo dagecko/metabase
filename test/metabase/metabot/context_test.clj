@@ -101,13 +101,13 @@
               result (#'context/enhance-context-with-schema input)]
           (is (= (get-in result [:user_is_viewing 0 :used_tables]) mock-tables)))))))
 
-(deftest enhance-context-with-schema-non-native
+(deftest ^:parallel enhance-context-with-schema-non-native
   (testing "Does not enhance context for non-native queries"
     (let [input {:user_is_viewing [{:query users-mbql-query}]}
           result (#'context/enhance-context-with-schema input)]
       (is (nil? (get-in result [:user_is_viewing 0 :used_tables]))))))
 
-(deftest enhance-context-with-schema-no-database
+(deftest ^:parallel enhance-context-with-schema-no-database
   (testing "Does not enhance context if no database present"
     (let [input {:user_is_viewing [{:query (dissoc users-native-query :database)}]}
           result (#'context/enhance-context-with-schema input)]
@@ -174,7 +174,7 @@
           (is (nil? (get-in result [:user_is_viewing 0 :used_tables])))
           (is (false? @called?)))))))
 
-(deftest annotate-transform-source-types-native-transform-test
+(deftest ^:parallel annotate-transform-source-types-native-transform-test
   (testing "Annotates draft native transform with source_type :native"
     (let [input {:user_is_viewing [{:type "transform"
                                     :source {:type :query
@@ -182,7 +182,7 @@
           result (#'context/annotate-transform-source-types input)]
       (is (= :native (get-in result [:user_is_viewing 0 :source_type]))))))
 
-(deftest annotate-transform-source-types-mbql-transform-test
+(deftest ^:parallel annotate-transform-source-types-mbql-transform-test
   (testing "Annotates draft MBQL transform with source_type :mbql"
     (let [input {:user_is_viewing [{:type "transform"
                                     :source {:type :query
@@ -190,7 +190,7 @@
           result (#'context/annotate-transform-source-types input)]
       (is (= :mbql (get-in result [:user_is_viewing 0 :source_type]))))))
 
-(deftest annotate-transform-source-types-python-transform-test
+(deftest ^:parallel annotate-transform-source-types-python-transform-test
   (testing "Annotates draft Python transform with source_type :python"
     (let [input {:user_is_viewing [{:type "transform"
                                     :source {:type :python
@@ -199,7 +199,7 @@
           result (#'context/annotate-transform-source-types input)]
       (is (= :python (get-in result [:user_is_viewing 0 :source_type]))))))
 
-(deftest annotate-transform-source-types-normalization-test
+(deftest ^:parallel annotate-transform-source-types-normalization-test
   (testing "Transform source query gets normalized before query type detection"
     (let [input {:user_is_viewing [{:type "transform"
                                     :source {:type "query"
@@ -239,7 +239,7 @@
           (is (= #{"question" "model" "dashboard" "table"}
                  (set (map :type recently-viewed)))))))))
 
-(deftest enhance-context-with-schema-mbql-query-test
+(deftest ^:parallel enhance-context-with-schema-mbql-query-test
   (testing "MBQL adhoc query gets source table added to used_tables"
     (mt/with-test-user :rasta
       (let [table-id (mt/id :orders)
@@ -254,7 +254,7 @@
         (is (some #(= table-id (:id %)) tables)
             (str "Should include source table " table-id " in used_tables"))))))
 
-(deftest enhance-context-mbql-viewing-context-rendering-test
+(deftest ^:parallel enhance-context-mbql-viewing-context-rendering-test
   (testing "MBQL adhoc query viewing context includes table name for LLM"
     (mt/with-test-user :rasta
       (let [table-id (mt/id :orders)

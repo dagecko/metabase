@@ -97,7 +97,7 @@
   (let [remote-repo (apply init-remote! dir config)]
     [(->source! branch remote-repo) remote-repo]))
 
-(deftest path-prefix
+(deftest ^:parallel path-prefix
   (let [id (u/generate-nano-id "a")]
     (testing "Not in a collection"
       (doseq [path ["asdf"
@@ -118,7 +118,7 @@
           (is (= (str "collections/" id) (#'git/path-prefix path)))
           (is (true? (#'git/matches-prefix path #{(str "collections/" id) (str "collections/" (u/generate-nano-id))}))))))))
 
-(deftest qualify-branch-test
+(deftest ^:parallel qualify-branch-test
   (is (= "refs/heads/main" (#'git/qualify-branch "main")))
   (is (= "refs/heads/main" (#'git/qualify-branch "refs/heads/main"))))
 

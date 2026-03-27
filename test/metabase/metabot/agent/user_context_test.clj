@@ -6,7 +6,7 @@
    [metabase.metabot.tools.shared.llm-representations :as llm-rep]
    [metabase.test :as mt]))
 
-(deftest format-current-time-test
+(deftest ^:parallel format-current-time-test
   (testing "formats time from context with timezone"
     (let [context {:current_time_with_timezone "2024-01-15T14:30:00-05:00"}
           result  (user-context/format-current-time context)]
@@ -33,7 +33,7 @@
     (is (string?
          (user-context/format-current-time {:current_time_with_timezone "invalid"})))))
 
-(deftest extract-sql-dialect-test
+(deftest ^:parallel extract-sql-dialect-test
   (testing "extracts sql_engine from explicit type: native context"
     (let [context {:user_is_viewing [{:type "native"
                                       :sql_engine "PostgreSQL"}]}
@@ -73,7 +73,7 @@
           result (user-context/extract-sql-dialect context)]
       (is (nil? result)))))
 
-(deftest format-viewing-context-test
+(deftest ^:parallel format-viewing-context-test
   (testing "formats adhoc notebook (MBQL) query context"
     (is (=? #"(?s).*notebook editor.*Database ID: 1.*"
             (user-context/format-viewing-context {:user_is_viewing [{:type  "adhoc"
@@ -178,7 +178,7 @@
       (is (some? result))
       (is (re-find #"no active buffers" result)))))
 
-(deftest format-viewing-context-test-2
+(deftest ^:parallel format-viewing-context-test-2
   (testing "formats table entity"
     (let [context {:user_is_viewing [{:type "table"
                                       :id 123
@@ -249,7 +249,7 @@
       (is (re-find #"users" result))
       (is (re-find #"Top Users" result)))))
 
-(deftest format-recent-views-test
+(deftest ^:parallel format-recent-views-test
   (testing "formats recent views"
     (let [context {:user_recently_viewed [{:type "question"
                                            :id 123
@@ -349,7 +349,7 @@
       (is (= "" (:viewing_context result)))
       (is (= "" (:recent_views result))))))
 
-(deftest format-entity-fetches-details-from-db-test
+(deftest ^:parallel format-entity-fetches-details-from-db-test
   (testing "question with only type+id fetches name and description from DB"
     (mt/with-test-user :rasta
       (mt/with-temp [:model/Card {card-id :id} {:name          "Retention Cohorts"

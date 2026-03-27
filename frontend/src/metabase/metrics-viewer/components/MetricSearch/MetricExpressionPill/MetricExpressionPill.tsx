@@ -1,23 +1,35 @@
 import { t } from "ttag";
 
 import { SourceColorIndicator } from "metabase/common/components/SourceColorIndicator";
-import { Flex, Pill } from "metabase/ui";
+import { Badge, Flex, Pill } from "metabase/ui";
+
+import type {
+  ExpressionDefinitionEntry,
+  MetricsViewerDefinitionEntry,
+} from "../../../types/viewer-state";
+import { buildExpressionForPill } from "../utils";
 
 import S from "./MetricExpressionPill.module.css";
 
 type MetricExpressionPillProps = {
-  expressionText: string;
+  expressionEntry: ExpressionDefinitionEntry;
+  metricEntries: MetricsViewerDefinitionEntry[];
   colors?: string[];
   onClick: (e: React.MouseEvent) => void;
   onRemove: () => void;
 };
 
 export function MetricExpressionPill({
-  expressionText,
+  expressionEntry,
+  metricEntries,
   colors,
   onClick,
   onRemove,
 }: MetricExpressionPillProps) {
+  const expression = buildExpressionForPill(
+    expressionEntry.tokens,
+    metricEntries,
+  );
   return (
     <Pill
       className={S.metricExpressionPill}
@@ -36,7 +48,22 @@ export function MetricExpressionPill({
     >
       <Flex align="center" gap="xs">
         <SourceColorIndicator colors={colors} fallbackIcon="metric" />
-        <span>{expressionText}</span>
+        <Flex align="center" gap={0}>
+          {expression.map((e, i) => {
+            if (typeof e === "number") {
+              return (
+                <Badge key={i} circle c="text-hover" className={S.countBadge}>
+                  {e}
+                </Badge>
+              );
+            }
+            return (
+              <span key={i} className={S.expressionText}>
+                {e}
+              </span>
+            );
+          })}
+        </Flex>
       </Flex>
     </Pill>
   );

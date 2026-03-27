@@ -4,16 +4,21 @@ import { Box, Popover } from "metabase/ui";
 import type { FilterClause, MetricDefinition } from "metabase-lib/metric";
 import * as LibMetric from "metabase-lib/metric";
 
-import type { MetricSourceId, SourceColorMap } from "../../types/viewer-state";
+import type {
+  MetricSourceId,
+  MetricsViewerDefinitionEntry,
+  MetricsViewerFormulaEntity,
+  SourceColorMap,
+} from "../../types/viewer-state";
 
 import S from "./FilterPopover.module.css";
-import type { DefinitionSource } from "./FilterPopoverContent";
 import { FilterPopoverContent } from "./FilterPopoverContent";
 
 const POPOVER_MAX_HEIGHT = "37.5rem";
 
 interface FilterPopoverProps {
-  definitions: DefinitionSource[];
+  formulaEntities: MetricsViewerFormulaEntity[];
+  definitions: Record<MetricSourceId, MetricsViewerDefinitionEntry>;
   metricColors: SourceColorMap;
   onUpdateDefinition: (
     id: MetricSourceId,
@@ -23,6 +28,7 @@ interface FilterPopoverProps {
 }
 
 export function FilterPopover({
+  formulaEntities,
   definitions,
   metricColors,
   onUpdateDefinition,
@@ -33,10 +39,8 @@ export function FilterPopover({
 
   const handleFilterApplied = useCallback(
     (sourceId: MetricSourceId, filter: FilterClause) => {
-      const source = definitions.find(
-        (definition) => definition.id === sourceId,
-      );
-      if (!source) {
+      const source = definitions[sourceId];
+      if (!source || source.definition == null) {
         return;
       }
       const newDefinition = LibMetric.filter(source.definition, filter);
@@ -59,9 +63,12 @@ export function FilterPopover({
         </Box>
       </Popover.Target>
       <Popover.Dropdown p={0} mah={POPOVER_MAX_HEIGHT} className={S.dropdown}>
-        {definitions.length > 0 && (
+        {Object.values(definitions).some(
+          (definition) => definition.definition != null,
+        ) && (
           <FilterPopoverContent
             key={contentKey}
+            formulaEntities={formulaEntities}
             definitions={definitions}
             metricColors={metricColors}
             onFilterApplied={handleFilterApplied}

@@ -82,7 +82,8 @@ export function MetricSearchPanel({
         <Text fw={700} size="lg">{t`Explore`}</Text>
         {hasDefinitions && (
           <FilterPopover
-            definitions={readyDefinitions}
+            formulaEntities={formulaEntities}
+            definitions={definitions}
             metricColors={metricColors}
             onUpdateDefinition={onUpdateDefinition}
           >

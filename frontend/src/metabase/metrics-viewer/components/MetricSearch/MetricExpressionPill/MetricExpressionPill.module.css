@@ -7,5 +7,13 @@
 }
 
 .metricExpressionPill:hover {
-  background-color: var(--mb-color-background-brand);
+  background-color: var(--mb-color-background-secondary);
+}
+
+.expressionText {
+  white-space: pre-wrap;
+}
+
+.countBadge {
+  margin-inline-start: 0.2em;
 }

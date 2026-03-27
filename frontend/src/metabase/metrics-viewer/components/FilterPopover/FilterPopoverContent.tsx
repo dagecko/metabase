@@ -19,7 +19,13 @@ import type {
   MetricDefinition,
 } from "metabase-lib/metric";
 
-import type { MetricSourceId, SourceColorMap } from "../../types/viewer-state";
+import type {
+  MetricSourceId,
+  MetricsViewerDefinitionEntry,
+  MetricsViewerFormulaEntity,
+  SourceColorMap,
+} from "../../types/viewer-state";
+import { isExpressionEntry, isMetricEntry } from "../../types/viewer-state";
 
 import S from "./FilterPopover.module.css";
 import { filterDisplayGroupsBySearch } from "./utils";
@@ -30,6 +36,7 @@ const FILTER_WIDTH = "24rem";
 export type DefinitionSource = {
   id: MetricSourceId;
   definition: MetricDefinition;
+  count?: number;
 };
 
 type NavigationState =
@@ -45,26 +52,66 @@ type DisplayMetricGroup = {
 };
 
 interface FilterPopoverContentProps {
-  definitions: DefinitionSource[];
+  formulaEntities: MetricsViewerFormulaEntity[];
+  definitions: Record<MetricSourceId, MetricsViewerDefinitionEntry>;
   metricColors: SourceColorMap;
   onFilterApplied: (id: MetricSourceId, filter: FilterClause) => void;
 }
 
+function getDefinitionSources(
+  formulaEntities: MetricsViewerFormulaEntity[],
+  definitions: Record<MetricSourceId, MetricsViewerDefinitionEntry>,
+): DefinitionSource[] {
+  type MaybeDefinitionSource = Omit<DefinitionSource, "definition"> & {
+    definition: MetricDefinition | null;
+  };
+  const maybeDefinitionSources: MaybeDefinitionSource[] =
+    formulaEntities.flatMap((entity) => {
+      if (isMetricEntry(entity)) {
+        return [
+          {
+            id: entity.id,
+            definition: entity.definition ?? definitions[entity.id]?.definition,
+          },
+        ];
+      }
+      if (isExpressionEntry(entity)) {
+        return entity.tokens
+          .filter((token) => token.type === "metric")
+          .map((token) => ({
+            id: token.sourceId,
+            definition:
+              token.definition ?? definitions[token.sourceId]?.definition,
+            count: token.count,
+          }));
+      }
+      return [];
+    });
+  return maybeDefinitionSources.filter(
+    (source): source is DefinitionSource => source.definition != null,
+  );
+}
+
 export function FilterPopoverContent({
+  formulaEntities,
   definitions,
   metricColors,
   onFilterApplied,
 }: FilterPopoverContentProps) {
+  const definitionSources = useMemo(
+    () => getDefinitionSources(formulaEntities, definitions),
+    [formulaEntities, definitions],
+  );
   const [navState, setNavState] = useState<NavigationState>({ view: "list" });
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [searchText, setSearchText] = useState("");
 
   const displayGroups = useMemo((): DisplayMetricGroup[] => {
     const rawGroups = getMetricGroups(
-      definitions.map((definition) => definition.definition),
+      definitionSources.map((source) => source.definition),
     );
     return rawGroups.map((group, index) => {
-      const sourceId = definitions[index].id;
+      const sourceId = definitionSources[index].id;
       return {
         id: sourceId,
         metricName: group.metricName,
@@ -73,7 +120,7 @@ export function FilterPopoverContent({
         sections: group.sections,
       };
     });
-  }, [definitions, metricColors]);
+  }, [definitionSources, metricColors]);
 
   const filteredDisplayGroups = useMemo(
     () => filterDisplayGroupsBySearch(displayGroups, searchText),
@@ -97,14 +144,14 @@ export function FilterPopoverContent({
       if (navState.view !== "filter") {
         return;
       }
-      const selected = definitions[navState.definitionIndex];
-      if (!selected) {
+      const selected = definitionSources[navState.definitionIndex];
+      if (!selected || selected.definition == null) {
         return;
       }
       onFilterApplied(selected.id, filter);
       setNavState({ view: "list" });
     },
-    [navState, definitions, onFilterApplied],
+    [navState, definitionSources, onFilterApplied],
   );
 
   const toggleExpanded = useCallback((id: string) => {
@@ -116,10 +163,10 @@ export function FilterPopoverContent({
   const isSearching = filteredDisplayGroups !== null;
   const visibleGroups = isSearching ? filteredDisplayGroups : displayGroups;
   const hasNoResults = isSearching && visibleGroups.length === 0;
-  const showMetricHeaders = definitions.length > 1;
+  const showMetricHeaders = definitionSources.length > 1;
 
   if (navState.view === "filter") {
-    const selected = definitions[navState.definitionIndex];
+    const selected = definitionSources[navState.definitionIndex];
     if (!selected) {
       return null;
     }

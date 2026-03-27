@@ -1337,7 +1337,8 @@
            settings
            transforms
            transforms-base
-           util}
+           util
+           warehouse-schema}
    :friends #{transforms}
    :model-exports #{:model/Transform
                     :model/TransformJob
@@ -2452,8 +2453,7 @@
            remote-sync
            search
            util
-           warehouses
-           workspaces}
+           warehouses}
    :model-exports #{:model/Dimension
                     :model/Field
                     :model/FieldUserSettings
@@ -2545,7 +2545,6 @@
 
   workspaces
   {:team "Metabot"
-   :api  #{metabase.workspaces.core}
    :uses #{util}}
 
   xrays

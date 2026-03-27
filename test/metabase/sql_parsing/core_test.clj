@@ -1,8 +1,13 @@
-(ns metabase.sql-parsing.core-test
+(ns ^:mb/driver-tests metabase.sql-parsing.core-test
   (:require
    [clojure.java.io :as io]
    [clojure.test :refer :all]
+   [metabase.driver :as driver]
+   [metabase.lib.core :as lib]
+   [metabase.lib.metadata :as lib.metadata]
+   [metabase.query-processor.compile :as qp.compile]
    [metabase.sql-parsing.core :as sql-parsing]
+   [metabase.test :as mt]
    [metabase.util :as u]))
 
 (set! *warn-on-reflection* true)
@@ -482,3 +487,31 @@
             "Should include users wildcard")
         (is (some #(= ["transactions" "total"] %) (normalize-fields result))
             "Should include transactions.total")))))
+
+(deftest ^:parallel is-single-select-stmt?-test
+  (mt/test-drivers (mt/normal-drivers-with-feature :connection-impersonation)
+    (let [mp (mt/metadata-provider)
+          products (lib.metadata/table mp (mt/id :products))
+          orders (lib.metadata/table mp (mt/id :orders))
+          query (-> (lib/query mp products)
+                    (lib/join (lib/join-clause orders [(lib/= (mt/id :products :id)
+                                                              (mt/id :orders :product_id))])))
+          native-query (:query (qp.compile/compile-with-inline-parameters query))]
+      (testing "A single SELECT statement returns true and the reconstructed SQL"
+        (are [sql] (=? {:is_single_select? true, :sql string?}
+                       (sql-parsing/is-single-select-stmt? driver/*driver* sql))
+          native-query
+          "SELECT 1"
+          "SELECT * FROM table"
+          "WITH x AS (SELECT * FROM foo) SELECT * from x"
+          "WITH x AS (SELECT a FROM foo), y AS (SELECT b FROM bar), z AS (SELECT c FROM baz) SELECT x.a, y.b, z.c FROM x, y, z")))
+    (testing "All other queries are rejected"
+      (are [sql] (=? {:is_single_select? false}
+                     (sql-parsing/is-single-select-stmt? driver/*driver* sql))
+        "SELECT ("
+        "SELECT 1; SELECT 2"
+        "SET ROLE NONE"
+        "DROP TABLE table"
+        "SET ROLE NONE; DROP TABLE table"
+        "SELECT set_config('role', 'none', false); DROP TABLE table"
+        "DO $$ BEGIN EXECUTE 'SET ROLE NONE; DROP TABLE table'; END $$;"))))

@@ -1437,6 +1437,7 @@
 
   sql-parsing
   {:team "DevEx"
+   :api #{metabase.sql-parsing.core}
    :uses #{util}}
 
   sso
@@ -2159,6 +2160,7 @@
            models
            premium-features
            query-processor
+           sql-parsing
            util
            warehouse-schema
            enterprise/sandbox}}

@@ -413,3 +413,37 @@
               (.execute ^Value (object-array [sql from-dialect to-dialect]))
               .asString)))
       normalize-transpilation-result))
+
+;; TODO(rileythomp, 2026-03): Should this be a driver multimethod?
+(defn- driver->dialect
+  "Map a Metabase driver keyword to a SQLGlot dialect string.
+   Returns nil for drivers that should use SQLGlot's default dialect (e.g., H2)."
+  [driver]
+  (case driver
+    nil                  nil
+    :postgres            "postgres"
+    :mysql               "mysql"
+    :snowflake           "snowflake"
+    :bigquery            "bigquery"
+    :bigquery-cloud-sdk  "bigquery"
+    :redshift            "redshift"
+    :sqlserver           "tsql"
+    :sparksql            "spark"
+    :presto-jdbc         "presto"
+    :starburst           "trino"
+    :clickhouse          "clickhouse"
+    :vertica             nil
+    :h2                  nil
+    ;; Default: try using the driver name as dialect
+    (name driver)))
+
+(defn is-single-select-stmt?
+  "Validates that a query is a single SELECT statement
+   and returns the query reconstructed from the parsed AST."
+  [driver sql]
+  (-> (with-open [^Closeable ctx (python.pool/python-context)]
+        (with-python-timeout ctx default-timeout-ms
+          (-> ^Value (common/eval-python ctx "sql_tools.is_single_select_stmt")
+              (.execute ^Value (object-array [sql (driver->dialect driver)]))
+              .asString)))
+      json/decode+kw))

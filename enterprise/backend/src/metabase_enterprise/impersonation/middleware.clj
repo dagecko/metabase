@@ -1,11 +1,31 @@
 (ns metabase-enterprise.impersonation.middleware
   (:require
    [metabase-enterprise.impersonation.driver :as impersonation.driver]
+   [metabase.driver :as driver]
    [metabase.lib.metadata :as lib.metadata]
+   [metabase.lib.util :as lib.util]
    [metabase.premium-features.core :as premium-features :refer [defenterprise]]
    ;; legacy usage -- don't do things like this going forward
    ^{:clj-kondo/ignore [:deprecated-namespace :discouraged-namespace]} [metabase.query-processor.store :as qp.store]
-   [metabase.util.i18n :refer [tru]]))
+   [metabase.sql-parsing.core :as sql-parsing]
+   [metabase.util.i18n :refer [tru]]
+   [metabase.util.log :as log]))
+
+(defn- validate-impersonated-query [query]
+  (update query :stages
+          (fn [stages]
+            (mapv (fn [stage]
+                    (if (lib.util/native-stage? stage)
+                      (let [{:keys [is_single_select? sql error]}
+                            (sql-parsing/is-single-select-stmt? driver/*driver* (:native stage))]
+                        (when error
+                          (log/warnf "Failed to parse native query: %s\n: Query: %s" error (:native stage)))
+                        (if is_single_select?
+                          (assoc stage :native sql)
+                          (throw (ex-info (tru "Invalid impersonated native query. Must be a single select statement.")
+                                          {:sql (:native stage)}))))
+                      stage))
+                  stages))))
 
 (defenterprise apply-impersonation
   "Pre-processing middleware. Adds a key to the query. Currently used solely for caching."
@@ -17,7 +37,9 @@
                  (lib.metadata/database (qp.store/metadata-provider)))]
     (do
       (premium-features/assert-has-feature :advanced-permissions (tru "Advanced Permissions"))
-      (assoc query :impersonation/role role))
+      (-> query
+          validate-impersonated-query
+          (assoc :impersonation/role role)))
     query))
 
 (defenterprise apply-impersonation-postprocessing

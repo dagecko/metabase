@@ -1,3 +1,4 @@
+import { useDisclosure } from "@mantine/hooks";
 import { useCallback } from "react";
 import { jt, t } from "ttag";
 
@@ -8,6 +9,7 @@ import { useMetadataToasts } from "metabase/metadata/hooks/useMetadataToasts";
 import { getStoreUsers } from "metabase/selectors/store-users";
 import { Button, Stack, Text, Title } from "metabase/ui";
 import { usePurchaseCloudAddOnMutation } from "metabase-enterprise/api/cloud-add-ons";
+import { TransformsSettingUpModal } from "metabase-enterprise/transforms/upsells/components/TransformsSettingUpModal";
 
 import { useTransformsBilling } from "../../hooks/useTransformsBilling";
 
@@ -18,6 +20,7 @@ import { useTransformsBilling } from "../../hooks/useTransformsBilling";
 export function TransformsUpsellPage() {
   const { isStoreUser } = useSelector(getStoreUsers);
   const [updateSetting] = useUpdateSettingMutation();
+  const [settingUpModalOpened, settingUpModalHandlers] = useDisclosure(false);
 
   // TODO: Check for unused props in useTransformsBilling
   const {
@@ -36,6 +39,7 @@ export function TransformsUpsellPage() {
   const [purchaseCloudAddOn, { isLoading: isPurchasing }] =
     usePurchaseCloudAddOnMutation();
   const handlePurchase = useCallback(async () => {
+    settingUpModalHandlers.open();
     try {
       await updateSetting({
         key: "transforms-enabled",
@@ -46,11 +50,17 @@ export function TransformsUpsellPage() {
       }).unwrap();
       window.location.reload();
     } catch {
+      settingUpModalHandlers.close();
       sendErrorToast(
         t`It looks like something went wrong. Please refresh the page and try again.`,
       );
     }
-  }, [purchaseCloudAddOn, sendErrorToast, updateSetting]);
+  }, [
+    purchaseCloudAddOn,
+    sendErrorToast,
+    settingUpModalHandlers,
+    updateSetting,
+  ]);
 
   // TODO: Should there be an admin check?
   const canUserPurchase = hasData && isStoreUser;
@@ -96,6 +106,14 @@ export function TransformsUpsellPage() {
       <Text c="text-secondary" lh={1.4}>
         {t`By clicking agree and continue you agree to be charged in accordance with our terms of service. Your free transforms never expire, so they'll be waiting here for you when you'r ready.`}
       </Text>
+
+      <TransformsSettingUpModal
+        opened={settingUpModalOpened}
+        onClose={() => {
+          settingUpModalHandlers.close();
+          window.location.reload();
+        }}
+      />
     </Stack>
   );
 }

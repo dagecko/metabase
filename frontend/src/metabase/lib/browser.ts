@@ -48,5 +48,12 @@ export function isMac() {
   return Boolean(platform.match(/^Mac/));
 }
 
+export function isTouchDevice() {
+  return (
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+  );
+}
+
 export const METAKEY = isMac() ? "⌘" : "Ctrl";
 export const ALTKEY = isMac() ? "⌥" : "Alt";

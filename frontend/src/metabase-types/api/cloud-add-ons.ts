@@ -3,7 +3,7 @@ export interface PurchaseCloudAddOnRequest {
     | "metabase-ai"
     | "metabase-ai-tiered"
     | "python-execution"
-    | "transforms-basic"
+    | "transforms-basic-metered"
     | "transforms-advanced";
   quantity?: number;
   terms_of_service?: boolean;

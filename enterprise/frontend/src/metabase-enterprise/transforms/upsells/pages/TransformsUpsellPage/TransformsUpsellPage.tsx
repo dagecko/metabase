@@ -42,8 +42,7 @@ export function TransformsUpsellPage() {
         value: true,
       }).unwrap();
       await purchaseCloudAddOn({
-        // TODO: Is this the right product type? `-metered` is a 404.
-        product_type: "transforms-basic",
+        product_type: "transforms-basic-metered",
       }).unwrap();
       window.location.reload();
     } catch {
